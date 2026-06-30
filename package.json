@@ -1,0 +1,15 @@
+{
+  "name": "waha-pwa-builder",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "data:check": "node scripts/data/check-sources.mjs",
+    "data:build": "node scripts/data/build-data-pack.mjs",
+    "data:validate": "node scripts/data/validate-pack.mjs",
+    "data:update": "node scripts/data/check-sources.mjs && node scripts/data/build-data-pack.mjs && node scripts/data/validate-pack.mjs"
+  }
+}

@@ -1,0 +1,96 @@
+name: Update data pack
+
+on:
+  schedule:
+    # Daily at 06:00 UTC — adjust if GW/Wahapedia release cadence differs
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if upstream sources are unchanged
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-data-pack
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      needs_rebuild: ${{ steps.check.outputs.needs_rebuild }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check upstream sources
+        id: check
+        env:
+          FORCE_REBUILD: ${{ inputs.force }}
+        run: |
+          ARGS=""
+          if [ "$FORCE_REBUILD" = "true" ]; then
+            ARGS="--force"
+          fi
+          npm run data:check -- $ARGS
+
+  build:
+    needs: check
+    if: needs.check.outputs.needs_rebuild == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Re-check sources (fresh checkout)
+        env:
+          FORCE_REBUILD: ${{ inputs.force }}
+        run: |
+          ARGS=""
+          if [ "$FORCE_REBUILD" = "true" ]; then
+            ARGS="--force"
+          fi
+          npm run data:check -- $ARGS
+
+      - name: Build data pack
+        run: npm run data:build
+
+      - name: Validate data pack
+        run: npm run data:validate
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/data-pack-update
+          delete-branch: true
+          commit-message: 'data: update pack from upstream sources'
+          title: 'data: update pack from upstream sources'
+          body: |
+            Automated data pack refresh triggered by upstream source changes.
+
+            - Wahapedia `Last_update.csv` and/or MFM meta changed
+            - Run `npm run data:validate` locally to inspect the manifest
+
+            > Skeleton CI — faction payloads will appear once fetch/transform steps are implemented.
+          labels: |
+            data
+            automation
+
+  notify-no-change:
+    needs: check
+    if: needs.check.outputs.needs_rebuild != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Upstream sources unchanged — no PR opened."
