@@ -83,7 +83,7 @@ jobs:
             - Wahapedia `Last_update.csv` and/or MFM meta changed
             - Run `npm run data:validate` locally to inspect the manifest
 
-            > Skeleton CI — faction payloads will appear once fetch/transform steps are implemented.
+            > Skeleton CI — MFM points merge still pending. Wahapedia faction packs are generated under `data/packs/wahapedia/`.
           labels: |
             data
             automation

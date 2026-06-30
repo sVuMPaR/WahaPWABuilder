@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { PATHS } from './lib/config.mjs';
 
 async function main() {
@@ -18,6 +19,21 @@ async function main() {
   if (!manifest.sources?.wahapedia?.lastUpdate) errors.push('manifest.sources.wahapedia.lastUpdate is required');
   if (!manifest.sources?.mfm?.version) errors.push('manifest.sources.mfm.version is required');
   if (!manifest.attribution?.wahapedia) errors.push('manifest.attribution.wahapedia is required');
+  if (!manifest.wahapedia?.factionCount) errors.push('manifest.wahapedia.factionCount is required');
+  if (!manifest.wahapedia?.datasheetCount) errors.push('manifest.wahapedia.datasheetCount is required');
+
+  let index;
+  try {
+    index = JSON.parse(await readFile(join(PATHS.packsDir, 'wahapedia/index.json'), 'utf8'));
+  } catch {
+    errors.push('wahapedia/index.json is missing');
+  }
+
+  if (index && index.length !== manifest.wahapedia?.factionCount) {
+    errors.push(
+      `faction count mismatch: manifest=${manifest.wahapedia?.factionCount}, index=${index.length}`,
+    );
+  }
 
   if (errors.length > 0) {
     console.error('Validation failed:');
@@ -25,7 +41,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Validated data pack v${manifest.packVersion}`);
+  console.log(
+    `Validated data pack v${manifest.packVersion} (${manifest.wahapedia.factionCount} factions)`,
+  );
 }
 
 main().catch((error) => {

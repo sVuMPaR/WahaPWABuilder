@@ -2,6 +2,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { PATHS } from './lib/config.mjs';
 import { readCheckResult, readLock, writeLock } from './lib/lock.mjs';
+import { buildWahapediaPacks } from './lib/wahapedia-build.mjs';
+import { fetchWahapediaCsv } from './lib/wahapedia-fetch.mjs';
 
 function bumpPackVersion(current) {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(current);
@@ -32,11 +34,12 @@ async function main() {
   await mkdir(PATHS.rawDir, { recursive: true });
   await mkdir(PATHS.packsDir, { recursive: true });
 
-  // Skeleton: persist source fingerprints only. Real CSV/MFM fetch + transform goes here.
-  await writeFile(
-    `${PATHS.rawDir}/wahapedia.meta.json`,
-    `${JSON.stringify({ lastUpdate: wahapedia.lastUpdate, hash: wahapedia.hash, url: wahapedia.url }, null, 2)}\n`,
-  );
+  console.log('Fetching Wahapedia CSV exports...');
+  const wahapediaFetch = await fetchWahapediaCsv();
+
+  console.log('Building Wahapedia faction packs...');
+  const wahapediaPacks = await buildWahapediaPacks();
+
   await writeFile(
     `${PATHS.rawDir}/mfm.meta.json`,
     `${JSON.stringify({ version: mfm.version, lastUpdated: mfm.lastUpdated, hash: mfm.hash, url: mfm.url }, null, 2)}\n`,
@@ -52,17 +55,25 @@ async function main() {
     sources: {
       wahapedia: {
         edition: 'wh40k11ed',
-        lastUpdate: wahapedia.lastUpdate,
+        lastUpdate: wahapediaFetch.lastUpdate ?? wahapedia.lastUpdate,
         hash: wahapedia.hash,
+        files: wahapediaFetch.files,
       },
       mfm: {
         version: mfm.version,
         lastUpdated: mfm.lastUpdated,
         hash: mfm.hash,
+        status: 'pending',
       },
     },
-    factions: [],
-    status: 'skeleton',
+    wahapedia: {
+      factionCount: wahapediaPacks.factionCount,
+      datasheetCount: wahapediaPacks.datasheetCount,
+      coreStratagemCount: wahapediaPacks.coreStratagemCount,
+      indexPath: 'wahapedia/index.json',
+      factions: wahapediaPacks.factions,
+    },
+    status: 'wahapedia',
   };
 
   await writeFile(PATHS.manifest, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -71,7 +82,7 @@ async function main() {
     packVersion,
     wahapedia: {
       edition: 'wh40k11ed',
-      lastUpdate: wahapedia.lastUpdate,
+      lastUpdate: wahapediaFetch.lastUpdate ?? wahapedia.lastUpdate,
       checkedAt: builtAt,
     },
     mfm: {
@@ -81,7 +92,9 @@ async function main() {
     },
   });
 
-  console.log(`Built data pack skeleton v${packVersion}`);
+  console.log(
+    `Built data pack v${packVersion} (${wahapediaPacks.factionCount} factions, ${wahapediaPacks.datasheetCount} datasheets)`,
+  );
 }
 
 main().catch((error) => {

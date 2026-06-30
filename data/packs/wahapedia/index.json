@@ -1,0 +1,202 @@
+[
+  {
+    "id": "AS",
+    "name": "Adepta Sororitas",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/adepta-sororitas",
+    "path": "factions/AS.json",
+    "datasheetCount": 38,
+    "detachmentCount": 7
+  },
+  {
+    "id": "AC",
+    "name": "Adeptus Custodes",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/adeptus-custodes",
+    "path": "factions/AC.json",
+    "datasheetCount": 31,
+    "detachmentCount": 8
+  },
+  {
+    "id": "AdM",
+    "name": "Adeptus Mechanicus",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/adeptus-mechanicus",
+    "path": "factions/AdM.json",
+    "datasheetCount": 39,
+    "detachmentCount": 10
+  },
+  {
+    "id": "TL",
+    "name": "Adeptus Titanicus",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/adeptus-titanicus",
+    "path": "factions/TL.json",
+    "datasheetCount": 4,
+    "detachmentCount": 0
+  },
+  {
+    "id": "AE",
+    "name": "Aeldari",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/aeldari",
+    "path": "factions/AE.json",
+    "datasheetCount": 97,
+    "detachmentCount": 16
+  },
+  {
+    "id": "AM",
+    "name": "Astra Militarum",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/astra-militarum",
+    "path": "factions/AM.json",
+    "datasheetCount": 134,
+    "detachmentCount": 11
+  },
+  {
+    "id": "CD",
+    "name": "Chaos Daemons",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/chaos-daemons",
+    "path": "factions/CD.json",
+    "datasheetCount": 106,
+    "detachmentCount": 11
+  },
+  {
+    "id": "QT",
+    "name": "Chaos Knights",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/chaos-knights",
+    "path": "factions/QT.json",
+    "datasheetCount": 37,
+    "detachmentCount": 6
+  },
+  {
+    "id": "CSM",
+    "name": "Chaos Space Marines",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/chaos-space-marines",
+    "path": "factions/CSM.json",
+    "datasheetCount": 112,
+    "detachmentCount": 18
+  },
+  {
+    "id": "DG",
+    "name": "Death Guard",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/death-guard",
+    "path": "factions/DG.json",
+    "datasheetCount": 71,
+    "detachmentCount": 10
+  },
+  {
+    "id": "DRU",
+    "name": "Drukhari",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/drukhari",
+    "path": "factions/DRU.json",
+    "datasheetCount": 47,
+    "detachmentCount": 10
+  },
+  {
+    "id": "EC",
+    "name": "Emperor’s Children",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/emperor-s-children",
+    "path": "factions/EC.json",
+    "datasheetCount": 23,
+    "detachmentCount": 8
+  },
+  {
+    "id": "GC",
+    "name": "Genestealer Cults",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/genestealer-cults",
+    "path": "factions/GC.json",
+    "datasheetCount": 138,
+    "detachmentCount": 9
+  },
+  {
+    "id": "GK",
+    "name": "Grey Knights",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/grey-knights",
+    "path": "factions/GK.json",
+    "datasheetCount": 31,
+    "detachmentCount": 8
+  },
+  {
+    "id": "AoI",
+    "name": "Imperial Agents",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/imperial-agents",
+    "path": "factions/AoI.json",
+    "datasheetCount": 46,
+    "detachmentCount": 7
+  },
+  {
+    "id": "QI",
+    "name": "Imperial Knights",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/imperial-knights",
+    "path": "factions/QI.json",
+    "datasheetCount": 28,
+    "detachmentCount": 6
+  },
+  {
+    "id": "LoV",
+    "name": "Leagues of Votann",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/leagues-of-votann",
+    "path": "factions/LoV.json",
+    "datasheetCount": 22,
+    "detachmentCount": 9
+  },
+  {
+    "id": "NEC",
+    "name": "Necrons",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/necrons",
+    "path": "factions/NEC.json",
+    "datasheetCount": 64,
+    "detachmentCount": 13
+  },
+  {
+    "id": "ORK",
+    "name": "Orks",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/orks",
+    "path": "factions/ORK.json",
+    "datasheetCount": 87,
+    "detachmentCount": 13
+  },
+  {
+    "id": "SM",
+    "name": "Space Marines",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/space-marines",
+    "path": "factions/SM.json",
+    "datasheetCount": 298,
+    "detachmentCount": 44
+  },
+  {
+    "id": "TAU",
+    "name": "T’au Empire",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/t-au-empire",
+    "path": "factions/TAU.json",
+    "datasheetCount": 63,
+    "detachmentCount": 8
+  },
+  {
+    "id": "TS",
+    "name": "Thousand Sons",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/thousand-sons",
+    "path": "factions/TS.json",
+    "datasheetCount": 60,
+    "detachmentCount": 9
+  },
+  {
+    "id": "TYR",
+    "name": "Tyranids",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/tyranids",
+    "path": "factions/TYR.json",
+    "datasheetCount": 57,
+    "detachmentCount": 12
+  },
+  {
+    "id": "UN",
+    "name": "Unaligned Forces",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/unaligned-forces",
+    "path": "factions/UN.json",
+    "datasheetCount": 20,
+    "detachmentCount": 0
+  },
+  {
+    "id": "WE",
+    "name": "World Eaters",
+    "link": "https://wahapedia.ru/wh40k10ed/factions/world-eaters",
+    "path": "factions/WE.json",
+    "datasheetCount": 58,
+    "detachmentCount": 8
+  }
+]

@@ -1,6 +1,6 @@
 {
-  "packVersion": "0.0.1",
-  "builtAt": "2026-06-30T16:51:37.762Z",
+  "packVersion": "0.0.2",
+  "builtAt": "2026-06-30T16:57:52.917Z",
   "attribution": {
     "wahapedia": "https://wahapedia.ru/",
     "mfm": "https://mfm.warhammer-community.com/"
@@ -9,14 +9,304 @@
     "wahapedia": {
       "edition": "wh40k11ed",
       "lastUpdate": "2026-05-09 23:42:21",
-      "hash": "638395a3342ca2c07cb4148ef327c73b7d5db68d02d48b72784dad889b0984e7"
+      "hash": "638395a3342ca2c07cb4148ef327c73b7d5db68d02d48b72784dad889b0984e7",
+      "files": {
+        "factions": {
+          "hash": "ae0f00b98dde9558ca32a3fd0caa8a43e572af6ebc6093ef7e13cdab2170308c",
+          "rowCount": 26
+        },
+        "source": {
+          "hash": "6f5339d4d2e9d7ee2cd3af82405d77b5093f3cc3a5d17536d306d8fb62f019e2",
+          "rowCount": 72
+        },
+        "datasheets-models": {
+          "hash": "e6ce227496a992652b0b03cf511108d087b07cf1065a5c6384c001216c9e46bb",
+          "rowCount": 1816
+        },
+        "datasheets": {
+          "hash": "4f9a51e77709d737c7915bf34438c239dc46ca3cee81c36d0f1788c55a8250e2",
+          "rowCount": 1711
+        },
+        "datasheets-abilities": {
+          "hash": "9855c6d5ac69b20f8c7b39a53e5eb877a6c2e7975ddf1f286f7216da756022b9",
+          "rowCount": 7153
+        },
+        "datasheets-unit-composition": {
+          "hash": "79978453e2266efe6cf5257531155d835c543a03fd47293c2e7d056c41199f82",
+          "rowCount": 2167
+        },
+        "datasheets-models-cost": {
+          "hash": "ec6e9432835afc3ea731c69bd99864df0a29e3ef93fdde4b669feb6cc7d34ede",
+          "rowCount": 2135
+        },
+        "datasheets-options": {
+          "hash": "194deaa02c76670078347006bb7007f3057588866b07cb6dd3110cf84e66961d",
+          "rowCount": 2831
+        },
+        "datasheets-wargear": {
+          "hash": "552dab0b3c8cffc91f2ab73e92045a14648587b1a4acf4e4ec75afca28843680",
+          "rowCount": 9353
+        },
+        "datasheets-detachment-abilities": {
+          "hash": "367636e9068e7f0ab5dc6113d8a12284c2f4c40af20a46e4c40fd3912e490236",
+          "rowCount": 16511
+        },
+        "datasheets-keywords": {
+          "hash": "a08db5773ef86a20371b6c384af28a980bcae9be202e6ceddca1df1c7e084a08",
+          "rowCount": 15868
+        },
+        "datasheets-leader": {
+          "hash": "f78ae17f011420786b828e943d449262344ed196f3f9810e8d77b0e9c51883ea",
+          "rowCount": 1918
+        },
+        "datasheets-enhancements": {
+          "hash": "14b20200a7ed14b670b9bd883d192ca857ee3d3597174db341494d8543bcfecc",
+          "rowCount": 11583
+        },
+        "abilities": {
+          "hash": "2d53801862ee9500e217bd3cca46272f732b69b22b3c9ff49ec6cd8cc1d4989c",
+          "rowCount": 90
+        },
+        "enhancements": {
+          "hash": "5d9f0314c97521885bae37c3a402c04d69aeb9ea122af0fef82bad46c2c52d03",
+          "rowCount": 927
+        },
+        "detachments": {
+          "hash": "bf7d95b6d2f85e1350d2349c0479ad54f5f3e1c7ca3a00e45af022bc87024c82",
+          "rowCount": 261
+        },
+        "detachment-abilities": {
+          "hash": "e9e0eb10a7aac8905e972e6e34176edd19e24656a00f8dc26687565dcdde5707",
+          "rowCount": 284
+        },
+        "last-update": {
+          "hash": "638395a3342ca2c07cb4148ef327c73b7d5db68d02d48b72784dad889b0984e7",
+          "rowCount": 1
+        },
+        "stratagems": {
+          "hash": "69d6e7305820b7354181f99879c243c0d2be1e9c988ea32e75dae971468f43e9",
+          "rowCount": 1482
+        },
+        "datasheets-stratagems": {
+          "hash": "6030cfca760a3ede634bc183da17d1c1fb9b587fdc83656dfe864db256c9d593",
+          "rowCount": 91089
+        }
+      }
     },
     "mfm": {
       "version": "1.0",
       "lastUpdated": "2026-06-23",
-      "hash": "80193a818ac629a0cdbeb93123f1e2100fec99d21312349a3329b3a7c2495322"
+      "hash": "80193a818ac629a0cdbeb93123f1e2100fec99d21312349a3329b3a7c2495322",
+      "status": "pending"
     }
   },
-  "factions": [],
-  "status": "skeleton"
+  "wahapedia": {
+    "factionCount": 25,
+    "datasheetCount": 1711,
+    "coreStratagemCount": 28,
+    "indexPath": "wahapedia/index.json",
+    "factions": [
+      {
+        "id": "AS",
+        "name": "Adepta Sororitas",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/adepta-sororitas",
+        "path": "factions/AS.json",
+        "datasheetCount": 38,
+        "detachmentCount": 7
+      },
+      {
+        "id": "AC",
+        "name": "Adeptus Custodes",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/adeptus-custodes",
+        "path": "factions/AC.json",
+        "datasheetCount": 31,
+        "detachmentCount": 8
+      },
+      {
+        "id": "AdM",
+        "name": "Adeptus Mechanicus",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/adeptus-mechanicus",
+        "path": "factions/AdM.json",
+        "datasheetCount": 39,
+        "detachmentCount": 10
+      },
+      {
+        "id": "TL",
+        "name": "Adeptus Titanicus",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/adeptus-titanicus",
+        "path": "factions/TL.json",
+        "datasheetCount": 4,
+        "detachmentCount": 0
+      },
+      {
+        "id": "AE",
+        "name": "Aeldari",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/aeldari",
+        "path": "factions/AE.json",
+        "datasheetCount": 97,
+        "detachmentCount": 16
+      },
+      {
+        "id": "AM",
+        "name": "Astra Militarum",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/astra-militarum",
+        "path": "factions/AM.json",
+        "datasheetCount": 134,
+        "detachmentCount": 11
+      },
+      {
+        "id": "CD",
+        "name": "Chaos Daemons",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/chaos-daemons",
+        "path": "factions/CD.json",
+        "datasheetCount": 106,
+        "detachmentCount": 11
+      },
+      {
+        "id": "QT",
+        "name": "Chaos Knights",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/chaos-knights",
+        "path": "factions/QT.json",
+        "datasheetCount": 37,
+        "detachmentCount": 6
+      },
+      {
+        "id": "CSM",
+        "name": "Chaos Space Marines",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/chaos-space-marines",
+        "path": "factions/CSM.json",
+        "datasheetCount": 112,
+        "detachmentCount": 18
+      },
+      {
+        "id": "DG",
+        "name": "Death Guard",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/death-guard",
+        "path": "factions/DG.json",
+        "datasheetCount": 71,
+        "detachmentCount": 10
+      },
+      {
+        "id": "DRU",
+        "name": "Drukhari",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/drukhari",
+        "path": "factions/DRU.json",
+        "datasheetCount": 47,
+        "detachmentCount": 10
+      },
+      {
+        "id": "EC",
+        "name": "Emperor’s Children",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/emperor-s-children",
+        "path": "factions/EC.json",
+        "datasheetCount": 23,
+        "detachmentCount": 8
+      },
+      {
+        "id": "GC",
+        "name": "Genestealer Cults",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/genestealer-cults",
+        "path": "factions/GC.json",
+        "datasheetCount": 138,
+        "detachmentCount": 9
+      },
+      {
+        "id": "GK",
+        "name": "Grey Knights",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/grey-knights",
+        "path": "factions/GK.json",
+        "datasheetCount": 31,
+        "detachmentCount": 8
+      },
+      {
+        "id": "AoI",
+        "name": "Imperial Agents",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/imperial-agents",
+        "path": "factions/AoI.json",
+        "datasheetCount": 46,
+        "detachmentCount": 7
+      },
+      {
+        "id": "QI",
+        "name": "Imperial Knights",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/imperial-knights",
+        "path": "factions/QI.json",
+        "datasheetCount": 28,
+        "detachmentCount": 6
+      },
+      {
+        "id": "LoV",
+        "name": "Leagues of Votann",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/leagues-of-votann",
+        "path": "factions/LoV.json",
+        "datasheetCount": 22,
+        "detachmentCount": 9
+      },
+      {
+        "id": "NEC",
+        "name": "Necrons",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/necrons",
+        "path": "factions/NEC.json",
+        "datasheetCount": 64,
+        "detachmentCount": 13
+      },
+      {
+        "id": "ORK",
+        "name": "Orks",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/orks",
+        "path": "factions/ORK.json",
+        "datasheetCount": 87,
+        "detachmentCount": 13
+      },
+      {
+        "id": "SM",
+        "name": "Space Marines",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/space-marines",
+        "path": "factions/SM.json",
+        "datasheetCount": 298,
+        "detachmentCount": 44
+      },
+      {
+        "id": "TAU",
+        "name": "T’au Empire",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/t-au-empire",
+        "path": "factions/TAU.json",
+        "datasheetCount": 63,
+        "detachmentCount": 8
+      },
+      {
+        "id": "TS",
+        "name": "Thousand Sons",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/thousand-sons",
+        "path": "factions/TS.json",
+        "datasheetCount": 60,
+        "detachmentCount": 9
+      },
+      {
+        "id": "TYR",
+        "name": "Tyranids",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/tyranids",
+        "path": "factions/TYR.json",
+        "datasheetCount": 57,
+        "detachmentCount": 12
+      },
+      {
+        "id": "UN",
+        "name": "Unaligned Forces",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/unaligned-forces",
+        "path": "factions/UN.json",
+        "datasheetCount": 20,
+        "detachmentCount": 0
+      },
+      {
+        "id": "WE",
+        "name": "World Eaters",
+        "link": "https://wahapedia.ru/wh40k10ed/factions/world-eaters",
+        "path": "factions/WE.json",
+        "datasheetCount": 58,
+        "detachmentCount": 8
+      }
+    ]
+  },
+  "status": "wahapedia"
 }
