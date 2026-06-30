@@ -1,0 +1,1 @@
+PWA armybuilder application for Warhammer 40k. This application allows users to create and manage their army lists for the game. It includes features such as unit selection, point tracking, and army composition validation. The application is designed to be user-friendly and accessible on both desktop and mobile devices.
