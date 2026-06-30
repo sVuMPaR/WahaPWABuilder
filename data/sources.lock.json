@@ -1,13 +1,15 @@
 {
-  "packVersion": "0.0.2",
+  "packVersion": "0.0.4",
   "wahapedia": {
     "edition": "wh40k11ed",
     "lastUpdate": "2026-05-09 23:42:21",
-    "checkedAt": "2026-06-30T16:57:52.917Z"
+    "checkedAt": "2026-06-30T17:04:23.301Z"
   },
   "mfm": {
     "version": "1.0",
-    "lastUpdated": "2026-06-23",
-    "checkedAt": "2026-06-30T16:57:52.917Z"
+    "lastUpdated": "2026-06-30",
+    "contentHash": "437aac72de54b8cd24652e8f7f343178c2dae7f90d4d5e6c713742dc8fda6565",
+    "hash": "f61893b8d9914b86adb2d6e08b43b653128a1c2e64c4b4ca3d977bd362ed8a8f",
+    "checkedAt": "2026-06-30T17:04:23.301Z"
   }
 }

@@ -10,7 +10,10 @@
     "data:check": "node scripts/data/check-sources.mjs",
     "data:build": "node scripts/data/build-data-pack.mjs",
     "data:validate": "node scripts/data/validate-pack.mjs",
-    "data:test": "node scripts/data/test-wahapedia-csv.mjs",
+    "data:test": "node scripts/data/test-wahapedia-csv.mjs && node scripts/data/test-mfm-parse.mjs",
     "data:update": "node scripts/data/check-sources.mjs && node scripts/data/build-data-pack.mjs && node scripts/data/validate-pack.mjs"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
   }
 }

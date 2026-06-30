@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { SOURCES } from './lib/config.mjs';
-import { fetchText, parseMfmMeta, parseWahapediaLastUpdate, sha256 } from './lib/fetch.mjs';
+import { fetchText, parseWahapediaLastUpdate, sha256 } from './lib/fetch.mjs';
 import { readLock, writeCheckResult } from './lib/lock.mjs';
+import { parseMfmIndex } from './lib/mfm-parse.mjs';
 
 const force = process.argv.includes('--force');
 
@@ -31,29 +32,29 @@ async function checkWahapedia(lock) {
 }
 
 async function checkMfm(lock) {
-  const url = SOURCES.mfm.metaUrl;
-  const yaml = await fetchText(url);
-  const { version, lastUpdated } = parseMfmMeta(yaml);
-  const hash = sha256(yaml);
-
-  if (!version || !lastUpdated) {
-    throw new Error(`Could not parse MFM meta from ${url}`);
-  }
+  const url = `${SOURCES.mfm.baseUrl}en`;
+  const html = await fetchText(url);
+  const { version, factions } = parseMfmIndex(html);
+  const hash = sha256(html);
+  const contentHash = sha256(factions.map((f) => f.slug).sort().join(','));
 
   const changed =
     force ||
     lock.mfm.version !== version ||
-    lock.mfm.lastUpdated !== lastUpdated;
+    lock.mfm.contentHash !== contentHash ||
+    lock.mfm.hash !== hash;
 
   return {
     source: 'mfm',
     url,
     version,
-    lastUpdated,
     hash,
+    contentHash,
+    factionCount: factions.length,
     previous: {
       version: lock.mfm.version,
-      lastUpdated: lock.mfm.lastUpdated,
+      contentHash: lock.mfm.contentHash,
+      hash: lock.mfm.hash,
     },
     changed,
   };
@@ -77,7 +78,7 @@ async function main() {
 
   console.log('Data source check:');
   console.log(`  Wahapedia: ${wahapedia.lastUpdate} (changed: ${wahapedia.changed})`);
-  console.log(`  MFM: v${mfm.version} / ${mfm.lastUpdated} (changed: ${mfm.changed})`);
+  console.log(`  MFM: v${mfm.version} / ${mfm.factionCount} factions (changed: ${mfm.changed})`);
   console.log(`  Needs rebuild: ${needsRebuild}`);
 
   if (process.env.GITHUB_OUTPUT) {

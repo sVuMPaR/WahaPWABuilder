@@ -21,6 +21,7 @@ async function main() {
   if (!manifest.attribution?.wahapedia) errors.push('manifest.attribution.wahapedia is required');
   if (!manifest.wahapedia?.factionCount) errors.push('manifest.wahapedia.factionCount is required');
   if (!manifest.wahapedia?.datasheetCount) errors.push('manifest.wahapedia.datasheetCount is required');
+  if (!manifest.mfm?.merge?.totalMatched) errors.push('manifest.mfm.merge.totalMatched is required');
 
   let index;
   try {
@@ -42,7 +43,8 @@ async function main() {
   }
 
   console.log(
-    `Validated data pack v${manifest.packVersion} (${manifest.wahapedia.factionCount} factions)`,
+    `Validated data pack v${manifest.packVersion} ` +
+      `(${manifest.wahapedia.factionCount} factions, ${manifest.mfm.merge.totalMatched} MFM matches)`,
   );
 }
 

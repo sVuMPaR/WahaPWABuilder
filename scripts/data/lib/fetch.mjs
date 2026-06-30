@@ -23,6 +23,7 @@ export function parseWahapediaLastUpdate(csv) {
 
 /**
  * Minimal YAML field extractor for MFM meta (version + lastUpdated).
+ * @deprecated Use parseMfmVersion from mfm-parse.mjs against the official site.
  * @param {string} yaml
  * @returns {{ version: string | null, lastUpdated: string | null }}
  */

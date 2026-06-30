@@ -1,7 +1,10 @@
 #!/usr/bin/env node
+import { readFile } from 'node:fs/promises';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { PATHS } from './lib/config.mjs';
 import { readCheckResult, readLock, writeLock } from './lib/lock.mjs';
+import { fetchMfmData } from './lib/mfm-fetch.mjs';
+import { mergeMfmIntoWahapediaPacks } from './lib/mfm-merge.mjs';
 import { buildWahapediaPacks } from './lib/wahapedia-build.mjs';
 import { fetchWahapediaCsv } from './lib/wahapedia-fetch.mjs';
 
@@ -40,10 +43,15 @@ async function main() {
   console.log('Building Wahapedia faction packs...');
   const wahapediaPacks = await buildWahapediaPacks();
 
-  await writeFile(
-    `${PATHS.rawDir}/mfm.meta.json`,
-    `${JSON.stringify({ version: mfm.version, lastUpdated: mfm.lastUpdated, hash: mfm.hash, url: mfm.url }, null, 2)}\n`,
+  console.log('Fetching and parsing MFM from official site...');
+  const mfmMeta = await fetchMfmData();
+
+  const wahapediaIndex = JSON.parse(
+    await readFile(`${PATHS.packsDir}/wahapedia/index.json`, 'utf8'),
   );
+
+  console.log('Merging MFM points into Wahapedia packs...');
+  const mergeStats = await mergeMfmIntoWahapediaPacks(wahapediaIndex, mfmMeta);
 
   const manifest = {
     packVersion,
@@ -60,10 +68,11 @@ async function main() {
         files: wahapediaFetch.files,
       },
       mfm: {
-        version: mfm.version,
-        lastUpdated: mfm.lastUpdated,
+        version: mfmMeta.version,
+        contentHash: mfmMeta.contentHash,
         hash: mfm.hash,
-        status: 'pending',
+        factionCount: mfmMeta.factionCount,
+        status: 'merged',
       },
     },
     wahapedia: {
@@ -73,7 +82,11 @@ async function main() {
       indexPath: 'wahapedia/index.json',
       factions: wahapediaPacks.factions,
     },
-    status: 'wahapedia',
+    mfm: {
+      indexPath: 'mfm/index.json',
+      merge: mergeStats,
+    },
+    status: 'merged',
   };
 
   await writeFile(PATHS.manifest, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -86,14 +99,17 @@ async function main() {
       checkedAt: builtAt,
     },
     mfm: {
-      version: mfm.version,
-      lastUpdated: mfm.lastUpdated,
+      version: mfmMeta.version,
+      lastUpdated: builtAt.slice(0, 10),
+      contentHash: mfmMeta.contentHash,
+      hash: mfm.hash,
       checkedAt: builtAt,
     },
   });
 
   console.log(
-    `Built data pack v${packVersion} (${wahapediaPacks.factionCount} factions, ${wahapediaPacks.datasheetCount} datasheets)`,
+    `Built data pack v${packVersion} (${wahapediaPacks.factionCount} factions, ` +
+      `${mergeStats.totalMatched} units with MFM points)`,
   );
 }
 
