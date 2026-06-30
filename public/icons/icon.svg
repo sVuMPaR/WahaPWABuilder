@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Waha PWA Builder">
+  <rect width="512" height="512" rx="96" fill="#1a1a2e"/>
+  <path fill="#c9a227" d="M128 352V160h64l64 112 64-112h64v192h-56V248l-56 96h-48l-56-96v104z"/>
+  <circle cx="256" cy="120" r="28" fill="#e8e8f0"/>
+</svg>
