@@ -1,3 +1,4 @@
+import { enhancementTotalPoints } from './enhancements';
 import type { CostOption, Datasheet, PricingTier, Roster, RosterUnit } from '../types';
 
 /** Whether `copy` (1-based instance of this datasheet in the army) falls in a tier range. */
@@ -49,19 +50,31 @@ export function createRosterUnit(
     points: cost.points,
     tierLabel,
     copyIndex,
+    ...(datasheet.points?.role === 'leader' || datasheet.points?.role === 'support'
+      ? { mfmRole: datasheet.points.role }
+      : {}),
   };
 }
 
-export function rosterTotalPoints(roster: Roster): number {
+export function rosterUnitsPoints(roster: Roster): number {
   return roster.units.reduce((sum, unit) => sum + unit.points, 0);
 }
 
+/** @deprecated Use rosterUnitsPoints or rosterGrandTotal */
+export function rosterTotalPoints(roster: Roster): number {
+  return rosterUnitsPoints(roster);
+}
+
+export function rosterGrandTotal(roster: Roster): number {
+  return rosterUnitsPoints(roster) + enhancementTotalPoints(roster);
+}
+
 export function pointsRemaining(roster: Roster): number {
-  return roster.pointLimit - rosterTotalPoints(roster);
+  return roster.pointLimit - rosterGrandTotal(roster);
 }
 
 export function isOverLimit(roster: Roster): boolean {
-  return rosterTotalPoints(roster) > roster.pointLimit;
+  return rosterGrandTotal(roster) > roster.pointLimit;
 }
 
 /** Re-number copy indices and refresh tier pricing after add/remove. */
@@ -90,4 +103,11 @@ export function recalculateRosterPricing(roster: Roster, datasheets: Map<string,
   });
 
   return { ...roster, units, updatedAt: new Date().toISOString() };
+}
+
+export function normalizeRoster(roster: Roster): Roster {
+  return {
+    ...roster,
+    enhancements: roster.enhancements ?? [],
+  };
 }

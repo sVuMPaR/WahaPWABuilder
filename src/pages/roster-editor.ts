@@ -1,30 +1,47 @@
 import { loadFactionIndex, loadFactionPack } from '../data/loader';
 import { getRoster, saveRoster } from '../db/store';
 import {
+  canAddEnhancement,
+  createRosterEnhancement,
+  getEligibleEnhancementsForUnit,
+  isStandardDetachment,
+  MAX_ARMY_ENHANCEMENTS,
+  pruneEnhancementsForDetachment,
+  pruneEnhancementsForRemovedUnit,
+} from '../roster/enhancements';
+import { copyRosterToClipboard, shareRoster } from '../roster/export';
+import {
+  clearAttachmentsToUnit,
+  formatLeaderMeta,
+  getAttachableUnits,
+  isLeaderOrSupport,
+} from '../roster/leaders';
+import {
   createRosterUnit,
   getCostOptionsForCopy,
   getTierForCopy,
   isOverLimit,
   nextCopyIndex,
+  normalizeRoster,
   pointsRemaining,
   recalculateRosterPricing,
-  rosterTotalPoints,
+  rosterGrandTotal,
 } from '../roster/points';
 import { escapeHtml } from '../util/html';
 import { navigate } from '../router';
-import type { CostOption, Datasheet, Roster } from '../types';
+import type { CostOption, Datasheet, FactionPack, Roster, RosterUnit } from '../types';
 
 function formatCostLabel(cost: CostOption): string {
   const models = cost.models === 1 ? '1 model' : `${cost.models} models`;
   return `${cost.points} pts · ${models}`;
 }
 
-function datasheetMap(pack: { datasheets: Datasheet[] }): Map<string, Datasheet> {
+function datasheetMap(pack: FactionPack): Map<string, Datasheet> {
   return new Map(pack.datasheets.map((sheet) => [sheet.id, sheet]));
 }
 
 function renderPointsBar(roster: Roster): string {
-  const total = rosterTotalPoints(roster);
+  const total = rosterGrandTotal(roster);
   const remaining = pointsRemaining(roster);
   const over = isOverLimit(roster);
   const pct = Math.min(100, Math.round((total / roster.pointLimit) * 100));
@@ -39,6 +56,90 @@ function renderPointsBar(roster: Roster): string {
     </div>`;
 }
 
+function renderDetachmentSection(roster: Roster, pack: FactionPack): string {
+  const detachments = (pack.detachments ?? []).filter(isStandardDetachment);
+  if (detachments.length === 0) {
+    return '<p class="empty">No detachments in data pack for this faction.</p>';
+  }
+
+  return `
+    <select id="detachment-select" class="search" ${detachments.length === 1 ? 'disabled' : ''}>
+      <option value="">Select detachment…</option>
+      ${detachments
+        .map((detachment) => {
+          const meta = [
+            detachment.points?.objective,
+            detachment.points?.dp != null ? `${detachment.points.dp} CP` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ');
+          return `<option value="${detachment.id}"${detachment.id === roster.detachmentId ? ' selected' : ''}>${escapeHtml(detachment.name)}${meta ? ` (${escapeHtml(meta)})` : ''}</option>`;
+        })
+        .join('')}
+    </select>`;
+}
+
+function renderEnhancementsSection(
+  roster: Roster,
+  pack: FactionPack,
+  sheets: Map<string, Datasheet>,
+  addingEnhancement: boolean,
+): string {
+  const assigned = roster.enhancements ?? [];
+  const canAdd = canAddEnhancement(roster) && roster.detachmentId;
+
+  const eligibleUnits = roster.units.filter(
+    (unit) => getEligibleEnhancementsForUnit(roster, pack, unit, sheets).length > 0,
+  );
+
+  return `
+    <div class="enhancement-block">
+      <div class="section-row">
+        <span class="muted">Assigned ${assigned.length} / ${MAX_ARMY_ENHANCEMENTS}</span>
+        ${canAdd && eligibleUnits.length > 0 ? '<button type="button" class="btn small" id="add-enhancement-btn">Add enhancement</button>' : ''}
+      </div>
+      ${
+        assigned.length === 0
+          ? '<p class="empty">No enhancements assigned.</p>'
+          : `<ul class="enhancement-list">
+        ${assigned
+          .map(
+            (entry) => `
+          <li class="enhancement-row">
+            <span>${escapeHtml(entry.name)} on ${escapeHtml(entry.unitName)}</span>
+            <span class="army-points">${entry.points} pts</span>
+            <button type="button" class="btn icon danger enhancement-remove" data-id="${entry.id}" title="Remove">×</button>
+          </li>`,
+          )
+          .join('')}
+      </ul>`
+      }
+      ${
+        addingEnhancement && canAdd
+          ? `<form id="enhancement-form" class="inline-form">
+          <label class="field">
+            <span>Character</span>
+            <select name="unitId" required>
+              <option value="">Select unit…</option>
+              ${eligibleUnits.map((unit) => `<option value="${unit.id}">${escapeHtml(unit.name)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="field">
+            <span>Enhancement</span>
+            <select name="enhancementId" required disabled>
+              <option value="">Select character first…</option>
+            </select>
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary small">Assign</button>
+            <button type="button" class="btn ghost small" id="cancel-enhancement-btn">Cancel</button>
+          </div>
+        </form>`
+          : ''
+      }
+    </div>`;
+}
+
 function renderArmyList(roster: Roster): string {
   if (roster.units.length === 0) {
     return '<p class="empty">No units yet. Search below to add datasheets with MFM points.</p>';
@@ -47,17 +148,18 @@ function renderArmyList(roster: Roster): string {
   return `
     <ul class="army-list">
       ${roster.units
-        .map(
-          (unit) => `
+        .map((unit) => {
+          const leaderMeta = unit.mfmRole ? formatLeaderMeta(roster, unit) : null;
+          return `
         <li class="army-row">
           <div class="army-row-main">
             <span class="army-name">${escapeHtml(unit.name)}</span>
-            <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models</span>
+            <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
           </div>
           <span class="army-points">${unit.points} pts</span>
           <button type="button" class="btn icon danger army-remove" data-unit-id="${unit.id}" title="Remove unit">×</button>
-        </li>`,
-        )
+        </li>`;
+        })
         .join('')}
     </ul>`;
 }
@@ -76,16 +178,17 @@ function renderUnitPicker(datasheets: Datasheet[], query: string): string {
   return `
     <ul class="picker-list">
       ${available
-        .map(
-          (sheet) => `
+        .map((sheet) => {
+          const badge = sheet.points?.role === 'leader' ? 'Leader' : sheet.points?.role === 'support' ? 'Support' : '';
+          return `
         <li class="picker-row">
           <div class="picker-main">
-            <span class="picker-name">${escapeHtml(sheet.name)}</span>
+            <span class="picker-name">${escapeHtml(sheet.name)}${badge ? ` <span class="badge">${badge}</span>` : ''}</span>
             <span class="picker-role">${escapeHtml(sheet.role ?? '')}</span>
           </div>
           <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}">Add</button>
-        </li>`,
-        )
+        </li>`;
+        })
         .join('')}
     </ul>`;
 }
@@ -115,16 +218,45 @@ function renderCostPicker(datasheet: Datasheet, copyIndex: number): string {
     </div>`;
 }
 
+function renderAttachPicker(roster: Roster, leaderUnit: RosterUnit, datasheet: Datasheet, sheets: Map<string, Datasheet>): string {
+  const targets = getAttachableUnits(roster, datasheet, sheets);
+
+  return `
+    <div class="cost-picker attach-picker" data-unit-id="${leaderUnit.id}">
+      <p class="cost-picker-title">
+        Attach ${escapeHtml(leaderUnit.name)}
+        <span class="muted">to a unit in your list</span>
+      </p>
+      <div class="cost-picker-options">
+        ${
+          targets.length === 0
+            ? '<p class="empty">Add a compatible bodyguard unit first.</p>'
+            : targets
+                .map(
+                  (target) => `
+            <button type="button" class="btn attach-option" data-target-id="${target.id}">
+              ${escapeHtml(target.name)}
+            </button>`,
+                )
+                .join('')
+        }
+        <button type="button" class="btn ghost attach-skip">Skip for now</button>
+      </div>
+    </div>`;
+}
+
 async function persistRoster(roster: Roster, datasheets: Map<string, Datasheet>): Promise<Roster> {
   const updated = recalculateRosterPricing(roster, datasheets);
   await saveRoster(updated);
   return updated;
 }
 
-function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datasheet[] }) {
+function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
   const sheets = datasheetMap(pack);
-  let current = roster;
+  let current = normalizeRoster(roster);
   let pendingDatasheetId: string | null = null;
+  let pendingLeaderUnitId: string | null = null;
+  let addingEnhancement = false;
   let searchQuery = '';
 
   const rerender = () => {
@@ -134,10 +266,22 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datas
           <button type="button" class="back" id="back-btn">← Rosters</button>
           <div class="roster-title-block">
             <h2>${escapeHtml(current.name)}</h2>
-            <p class="muted">${escapeHtml(current.factionName)} · ${current.pointLimit} pt ${current.battleSize.replace('-', ' ')}</p>
+            <p class="muted">${escapeHtml(current.factionName)} · ${current.pointLimit} pt ${current.battleSize.replace('-', ' ')}${current.detachmentName ? ` · ${escapeHtml(current.detachmentName)}` : ''}</p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="btn small" id="copy-roster-btn">Copy list</button>
+            <button type="button" class="btn small" id="share-roster-btn">Share</button>
           </div>
         </header>
         ${renderPointsBar(current)}
+        <section class="roster-section">
+          <h3 class="section-title">Detachment</h3>
+          ${renderDetachmentSection(current, pack)}
+        </section>
+        <section class="roster-section">
+          <h3 class="section-title">Enhancements</h3>
+          ${renderEnhancementsSection(current, pack, sheets, addingEnhancement)}
+        </section>
         <section class="roster-section">
           <h3 class="section-title">Army list</h3>
           <div id="army-list">${renderArmyList(current)}</div>
@@ -145,7 +289,20 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datas
         <section class="roster-section">
           <h3 class="section-title">Add unit</h3>
           <input type="search" id="unit-search" class="search" placeholder="Search datasheets…" value="${escapeHtml(searchQuery)}" />
-          <div id="cost-picker-slot">${pendingDatasheetId ? renderCostPicker(sheets.get(pendingDatasheetId)!, nextCopyIndex(current, pendingDatasheetId)) : ''}</div>
+          <div id="cost-picker-slot">${
+            pendingDatasheetId
+              ? renderCostPicker(sheets.get(pendingDatasheetId)!, nextCopyIndex(current, pendingDatasheetId))
+              : ''
+          }</div>
+          <div id="attach-picker-slot">${
+            pendingLeaderUnitId
+              ? (() => {
+                  const leader = current.units.find((unit) => unit.id === pendingLeaderUnitId);
+                  const datasheet = leader ? sheets.get(leader.datasheetId) : null;
+                  return leader && datasheet ? renderAttachPicker(current, leader, datasheet, sheets) : '';
+                })()
+              : ''
+          }</div>
           <div id="unit-picker">${renderUnitPicker(pack.datasheets, searchQuery)}</div>
         </section>
       </section>
@@ -153,14 +310,88 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datas
 
     root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/rosters'));
 
+    root.querySelector('#copy-roster-btn')?.addEventListener('click', async () => {
+      await copyRosterToClipboard(current);
+      const btn = root.querySelector<HTMLButtonElement>('#copy-roster-btn');
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1500);
+      }
+    });
+
+    root.querySelector('#share-roster-btn')?.addEventListener('click', async () => {
+      const shared = await shareRoster(current);
+      if (!shared) {
+        const btn = root.querySelector<HTMLButtonElement>('#share-roster-btn');
+        if (btn) {
+          const original = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => {
+            btn.textContent = original;
+          }, 1500);
+        }
+      }
+    });
+
+    root.querySelector<HTMLSelectElement>('#detachment-select')?.addEventListener('change', async (event) => {
+      const select = event.currentTarget as HTMLSelectElement;
+      const detachment = (pack.detachments ?? []).find((entry) => entry.id === select.value);
+      if (!detachment) return;
+
+      current = {
+        ...current,
+        detachmentId: detachment.id,
+        detachmentName: detachment.name,
+        enhancements: pruneEnhancementsForDetachment(
+          { ...current, detachmentId: detachment.id },
+          pack,
+        ),
+      };
+      current = await persistRoster(current, sheets);
+      rerender();
+    });
+
+    root.querySelector('#add-enhancement-btn')?.addEventListener('click', () => {
+      addingEnhancement = true;
+      rerender();
+    });
+
+    root.querySelector('#cancel-enhancement-btn')?.addEventListener('click', () => {
+      addingEnhancement = false;
+      rerender();
+    });
+
+    for (const btn of root.querySelectorAll<HTMLButtonElement>('.enhancement-remove')) {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id) return;
+        current = {
+          ...current,
+          enhancements: current.enhancements.filter((entry) => entry.id !== id),
+        };
+        current = await persistRoster(current, sheets);
+        rerender();
+      });
+    }
+
+    bindEnhancementForm();
+
     for (const btn of root.querySelectorAll<HTMLButtonElement>('.army-remove')) {
       btn.addEventListener('click', async () => {
         const unitId = btn.dataset.unitId;
         if (!unitId) return;
         current = {
           ...current,
-          units: current.units.filter((unit) => unit.id !== unitId),
+          units: clearAttachmentsToUnit(
+            { ...current, units: current.units.filter((unit) => unit.id !== unitId) },
+            unitId,
+          ),
+          enhancements: pruneEnhancementsForRemovedUnit(current, unitId),
         };
+        if (pendingLeaderUnitId === unitId) pendingLeaderUnitId = null;
         current = await persistRoster(current, sheets);
         pendingDatasheetId = null;
         rerender();
@@ -174,10 +405,67 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datas
       if (picker) picker.innerHTML = renderUnitPicker(pack.datasheets, searchQuery);
       bindPickerButtons();
     });
-    search?.focus();
 
     bindPickerButtons();
     bindCostPicker();
+    bindAttachPicker();
+  };
+
+  const bindEnhancementForm = () => {
+    const form = root.querySelector<HTMLFormElement>('#enhancement-form');
+    if (!form) return;
+
+    const unitSelect = form.querySelector<HTMLSelectElement>('select[name="unitId"]');
+    const enhancementSelect = form.querySelector<HTMLSelectElement>('select[name="enhancementId"]');
+
+    unitSelect?.addEventListener('change', () => {
+      if (!enhancementSelect || !unitSelect.value) return;
+      const unit = current.units.find((entry) => entry.id === unitSelect.value);
+      if (!unit) return;
+
+      const eligible = getEligibleEnhancementsForUnit(current, pack, unit, sheets);
+      enhancementSelect.disabled = eligible.length === 0;
+      enhancementSelect.innerHTML =
+        eligible.length === 0
+          ? '<option value="">No eligible enhancements</option>'
+          : `<option value="">Select enhancement…</option>${eligible.map((enhancement) => `<option value="${enhancement.id}">${escapeHtml(enhancement.name)} (${enhancement.points?.cost ?? enhancement.cost} pts)</option>`).join('')}`;
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const unitId = String(data.get('unitId'));
+      const enhancementId = String(data.get('enhancementId'));
+      const unit = current.units.find((entry) => entry.id === unitId);
+      if (!unit) return;
+
+      const eligible = getEligibleEnhancementsForUnit(current, pack, unit, sheets);
+      const enhancement = eligible.find((entry) => entry.id === enhancementId);
+      if (!enhancement) return;
+
+      current = {
+        ...current,
+        enhancements: [...current.enhancements, createRosterEnhancement(enhancement, unit)],
+      };
+      current = await persistRoster(current, sheets);
+      addingEnhancement = false;
+      rerender();
+    });
+  };
+
+  const addUnit = async (datasheet: Datasheet, cost: CostOption, tierLabel: string) => {
+    const newUnit = createRosterUnit(datasheet, nextCopyIndex(current, datasheet.id), cost, tierLabel);
+    current = {
+      ...current,
+      units: [...current.units, newUnit],
+    };
+    current = await persistRoster(current, sheets);
+    pendingDatasheetId = null;
+
+    if (isLeaderOrSupport(datasheet)) {
+      pendingLeaderUnitId = newUnit.id;
+    }
+    rerender();
   };
 
   const bindPickerButtons = () => {
@@ -195,17 +483,12 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datas
         if (!tier || options.length === 0) return;
 
         if (options.length === 1) {
-          current = {
-            ...current,
-            units: [...current.units, createRosterUnit(datasheet, copyIndex, options[0], tier.label)],
-          };
-          current = await persistRoster(current, sheets);
-          pendingDatasheetId = null;
-          rerender();
+          await addUnit(datasheet, options[0], tier.label);
           return;
         }
 
         pendingDatasheetId = datasheetId;
+        pendingLeaderUnitId = null;
         const slot = root.querySelector('#cost-picker-slot');
         if (slot) slot.innerHTML = renderCostPicker(datasheet, copyIndex);
         bindCostPicker();
@@ -214,7 +497,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datas
   };
 
   const bindCostPicker = () => {
-    const picker = root.querySelector('.cost-picker');
+    const picker = root.querySelector('.cost-picker:not(.attach-picker)');
     if (!picker) return;
 
     const datasheetId = picker.getAttribute('data-datasheet-id');
@@ -236,13 +519,37 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: { datasheets: Datas
         const tier = getTierForCopy(datasheet.points!.pricing, copyIndex);
         const cost = options[Number(btn.dataset.costIndex)];
         if (!tier || !cost) return;
+        await addUnit(datasheet, cost, tier.label);
+      });
+    }
+  };
+
+  const bindAttachPicker = () => {
+    const picker = root.querySelector('.attach-picker');
+    if (!picker) return;
+
+    const leaderUnitId = picker.getAttribute('data-unit-id');
+    if (!leaderUnitId) return;
+
+    picker.querySelector('.attach-skip')?.addEventListener('click', () => {
+      pendingLeaderUnitId = null;
+      const slot = root.querySelector('#attach-picker-slot');
+      if (slot) slot.innerHTML = '';
+    });
+
+    for (const btn of picker.querySelectorAll<HTMLButtonElement>('.attach-option')) {
+      btn.addEventListener('click', async () => {
+        const targetId = btn.dataset.targetId;
+        if (!targetId) return;
 
         current = {
           ...current,
-          units: [...current.units, createRosterUnit(datasheet, copyIndex, cost, tier.label)],
+          units: current.units.map((unit) =>
+            unit.id === leaderUnitId ? { ...unit, attachedToUnitId: targetId } : unit,
+          ),
         };
         current = await persistRoster(current, sheets);
-        pendingDatasheetId = null;
+        pendingLeaderUnitId = null;
         rerender();
       });
     }
@@ -268,5 +575,5 @@ export async function renderRosterEditor(root: HTMLElement, rosterId: string) {
   }
 
   const pack = await loadFactionPack(entry.id, entry.path);
-  bindEditor(root, roster, pack);
+  bindEditor(root, normalizeRoster(roster), pack);
 }

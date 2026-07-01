@@ -48,12 +48,46 @@ export interface UnitPoints {
   legends?: boolean;
 }
 
+export interface Enhancement {
+  id: string;
+  name: string;
+  cost?: string;
+  detachmentId: string;
+  detachment?: string;
+  legend?: string;
+  description?: string;
+  points?: { cost: number; leaderTo?: string[] };
+}
+
+export interface DatasheetEnhancementRef extends Enhancement {
+  datasheetId?: string;
+  enhancementId?: string;
+  factionId?: string;
+}
+
+export interface Detachment {
+  id: string;
+  factionId: string;
+  name: string;
+  legend?: string;
+  type?: string;
+  points?: {
+    dp?: number;
+    objective?: string;
+    unique?: string | null;
+  };
+}
+
 export interface Datasheet {
   id: string;
   name: string;
   role?: string;
   legend?: string;
   points?: UnitPoints;
+  enhancements?: DatasheetEnhancementRef[];
+  leaderAttachments?: { leaderId: string; attachedId: string }[];
+  leaderHead?: string;
+  leaderFooter?: string;
 }
 
 export interface FactionPack {
@@ -63,12 +97,15 @@ export interface FactionPack {
   datasheetCount: number;
   detachmentCount: number;
   datasheets: Datasheet[];
+  detachments?: Detachment[];
+  enhancements?: Enhancement[];
   mfm?: {
     slug: string;
     version: string;
     matchedUnits: number;
     unmatchedUnits: number;
   };
+  _slim?: boolean;
 }
 
 export interface RosterUnit {
@@ -79,6 +116,17 @@ export interface RosterUnit {
   points: number;
   tierLabel: string;
   copyIndex: number;
+  mfmRole?: 'leader' | 'support';
+  attachedToUnitId?: string;
+}
+
+export interface RosterEnhancement {
+  id: string;
+  enhancementId: string;
+  name: string;
+  points: number;
+  unitId: string;
+  unitName: string;
 }
 
 export interface Roster {
@@ -90,7 +138,10 @@ export interface Roster {
   mfmVersion?: string;
   battleSize: BattleSize;
   pointLimit: number;
+  detachmentId?: string;
+  detachmentName?: string;
   createdAt: string;
   updatedAt: string;
   units: RosterUnit[];
+  enhancements: RosterEnhancement[];
 }

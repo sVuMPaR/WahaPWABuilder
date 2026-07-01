@@ -1,6 +1,6 @@
 import { loadFactionIndex, loadManifest } from '../data/loader';
 import { deleteRoster, listRosters, saveRoster } from '../db/store';
-import { rosterTotalPoints } from '../roster/points';
+import { rosterGrandTotal } from '../roster/points';
 import { escapeHtml } from '../util/html';
 import { navigate } from '../router';
 import type { BattleSize, Roster } from '../types';
@@ -30,13 +30,13 @@ export async function renderRosterList(root: HTMLElement) {
           : `<ul class="roster-list">
         ${rosters
           .map((roster) => {
-            const total = rosterTotalPoints(roster);
+            const total = rosterGrandTotal(roster);
             const over = total > roster.pointLimit;
             return `
           <li class="roster-card">
             <button type="button" class="roster-open" data-id="${roster.id}">
               <span class="roster-card-name">${escapeHtml(roster.name)}</span>
-              <span class="roster-card-meta">${escapeHtml(factionNames.get(roster.factionId) ?? roster.factionName)}</span>
+              <span class="roster-card-meta">${escapeHtml(factionNames.get(roster.factionId) ?? roster.factionName)}${roster.detachmentName ? ` · ${escapeHtml(roster.detachmentName)}` : ''}</span>
               <span class="roster-card-points ${over ? 'over' : ''}">${total} / ${roster.pointLimit} pts</span>
             </button>
             <button type="button" class="btn icon danger roster-delete" data-id="${roster.id}" title="Delete roster">×</button>
@@ -132,6 +132,7 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
       createdAt: now,
       updatedAt: now,
       units: [],
+      enhancements: [],
     };
 
     await saveRoster(roster);
