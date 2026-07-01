@@ -210,6 +210,267 @@ a {
   border-top: 1px solid var(--border);
 }
 
+.attribution {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--accent-dim);
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+.btn.primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn.small {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.btn.ghost {
+  background: transparent;
+}
+
+.btn.icon {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.btn.danger {
+  color: var(--danger);
+  border-color: transparent;
+}
+
+.btn.danger:hover {
+  border-color: var(--danger);
+  background: rgba(232, 93, 93, 0.1);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.field input,
+.field select {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.form-actions {
+  margin-top: 0.25rem;
+}
+
+.form-note {
+  margin-top: 1rem;
+}
+
+.roster-card {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.roster-card:last-child {
+  border-bottom: none;
+}
+
+.roster-open {
+  flex: 1;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.roster-card-name {
+  font-weight: 600;
+}
+
+.roster-card-meta,
+.roster-card-points {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.roster-card-points {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.roster-card-points.over {
+  color: var(--danger);
+}
+
+.roster-editor .roster-title-block h2 {
+  margin: 0;
+}
+
+.points-bar {
+  position: relative;
+  height: 2.25rem;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.points-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 0.2s ease;
+}
+
+.points-bar.over .points-bar-fill {
+  background: linear-gradient(90deg, #a33, var(--danger));
+}
+
+.points-bar-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 100%;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.points-remaining {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.points-bar.over .points-remaining {
+  color: #ffd0d0;
+}
+
+.section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.roster-section + .roster-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.army-list,
+.picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.army-row,
+.picker-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.picker-row {
+  grid-template-columns: 1fr auto;
+}
+
+.army-row-main,
+.picker-main {
+  min-width: 0;
+}
+
+.army-name,
+.picker-name {
+  display: block;
+  font-weight: 500;
+}
+
+.army-meta,
+.picker-role {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.army-points {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.cost-picker {
+  margin: 0.75rem 0;
+  padding: 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent-dim);
+  background: var(--surface-2);
+}
+
+.cost-picker-title {
+  margin: 0 0 0.65rem;
+  font-weight: 600;
+}
+
+.cost-picker-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cost-option {
+  font-variant-numeric: tabular-nums;
+}
+
 @media (min-width: 640px) {
   .faction-grid {
     grid-template-columns: repeat(2, 1fr);

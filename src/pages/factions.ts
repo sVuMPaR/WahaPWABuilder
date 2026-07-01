@@ -1,5 +1,4 @@
 import { loadFactionIndex, loadFactionPack, loadManifest, getUnitPoints } from '../data/loader';
-import { listRosters } from '../db/store';
 import { navigate } from '../router';
 
 export async function renderFactionList(root: HTMLElement) {
@@ -80,6 +79,7 @@ export async function renderFactionDetail(root: HTMLElement, factionId: string) 
           <h2>${pack.name}</h2>
           <p class="muted">${pack.datasheetCount} datasheets · ${withPoints} with MFM points</p>
         </div>
+        <button type="button" class="btn primary" id="build-roster-btn">Build roster</button>
       </header>
       <ul class="datasheet-list">
         ${pack.datasheets
@@ -98,22 +98,5 @@ export async function renderFactionDetail(root: HTMLElement, factionId: string) 
   `;
 
   root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/'));
-}
-
-export async function renderRostersStub(root: HTMLElement) {
-  const rosters = await listRosters();
-
-  root.innerHTML = `
-    <section class="panel">
-      <header class="panel-header">
-        <h2>Rosters</h2>
-        <p class="muted">Local lists stored in IndexedDB on this device.</p>
-      </header>
-      ${
-        rosters.length === 0
-          ? '<p class="empty">No rosters yet. List builder UI is coming next.</p>'
-          : `<ul class="roster-list">${rosters.map((r) => `<li>${r.name}</li>`).join('')}</ul>`
-      }
-    </section>
-  `;
+  root.querySelector('#build-roster-btn')?.addEventListener('click', () => navigate(`/roster/new/${factionId}`));
 }

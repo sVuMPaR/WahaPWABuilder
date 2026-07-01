@@ -1,6 +1,8 @@
 import './style.css';
-import { parseFactionRoute, route, startRouter, navigate } from './router';
-import { renderFactionDetail, renderFactionList, renderRostersStub } from './pages/factions';
+import { parseFactionRoute, parseRosterRoute, route, startRouter, navigate } from './router';
+import { renderFactionDetail, renderFactionList } from './pages/factions';
+import { renderNewRoster, renderRosterList } from './pages/rosters';
+import { renderRosterEditor } from './pages/roster-editor';
 import { registerSW } from 'virtual:pwa-register';
 
 const app = document.querySelector<HTMLElement>('#app')!;
@@ -50,13 +52,40 @@ async function renderFaction() {
 
 async function renderRosters() {
   const main = shell('');
-  await renderRostersStub(main);
+  await renderRosterList(main);
+}
+
+async function renderNewRosterPage() {
+  const parsed = parseRosterRoute();
+  const main = shell('');
+  const factionId = parsed?.kind === 'new' ? parsed.factionId : undefined;
+  await renderNewRoster(main, factionId);
+}
+
+async function renderRosterEdit() {
+  const parsed = parseRosterRoute();
+  if (!parsed || parsed.kind !== 'edit') {
+    navigate('/rosters');
+    return;
+  }
+  const main = shell('');
+  await renderRosterEditor(main, parsed.id);
 }
 
 route('/', renderHome);
 route('/rosters', renderRosters);
+route('/roster/new', renderNewRosterPage);
 
 startRouter(async () => {
+  const rosterRoute = parseRosterRoute();
+  if (rosterRoute?.kind === 'new' && window.location.hash.match(/^#\/roster\/new\//)) {
+    await renderNewRosterPage();
+    return;
+  }
+  if (rosterRoute?.kind === 'edit') {
+    await renderRosterEdit();
+    return;
+  }
   if (window.location.hash.startsWith('#/faction/')) {
     await renderFaction();
     return;

@@ -21,12 +21,19 @@ let dbPromise: Promise<IDBPDatabase<WahaDB>> | null = null;
 
 function getDb() {
   if (!dbPromise) {
-    dbPromise = openDB<WahaDB>('waha-pwa-builder', 1, {
-      upgrade(db) {
-        db.createObjectStore('factions', { keyPath: 'id' });
-        const rosters = db.createObjectStore('rosters', { keyPath: 'id' });
-        rosters.createIndex('by-faction', 'factionId');
-        db.createObjectStore('meta');
+    dbPromise = openDB<WahaDB>('waha-pwa-builder', 2, {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          db.createObjectStore('factions', { keyPath: 'id' });
+          const rosters = db.createObjectStore('rosters', { keyPath: 'id' });
+          rosters.createIndex('by-faction', 'factionId');
+          db.createObjectStore('meta');
+        }
+        if (oldVersion > 0 && oldVersion < 2 && db.objectStoreNames.contains('rosters')) {
+          db.deleteObjectStore('rosters');
+          const rosters = db.createObjectStore('rosters', { keyPath: 'id' });
+          rosters.createIndex('by-faction', 'factionId');
+        }
       },
     });
   }
@@ -46,7 +53,13 @@ export async function getCachedFaction(id: string): Promise<FactionPack | null> 
 
 export async function listRosters(): Promise<Roster[]> {
   const db = await getDb();
-  return db.getAll('rosters');
+  const rosters = await db.getAll('rosters');
+  return rosters.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export async function getRoster(id: string): Promise<Roster | null> {
+  const db = await getDb();
+  return (await db.get('rosters', id)) ?? null;
 }
 
 export async function saveRoster(roster: Roster): Promise<void> {

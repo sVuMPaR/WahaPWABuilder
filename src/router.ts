@@ -26,3 +26,17 @@ export function parseFactionRoute(): string | null {
   const match = window.location.hash.match(/^#\/faction\/([^/]+)/);
   return match?.[1] ?? null;
 }
+
+export function parseRosterRoute(): { kind: 'new'; factionId?: string } | { kind: 'edit'; id: string } | null {
+  const hash = window.location.hash.replace(/^#/, '');
+
+  const newWithFaction = hash.match(/^\/roster\/new\/([^/]+)$/);
+  if (newWithFaction) return { kind: 'new', factionId: newWithFaction[1] };
+
+  if (hash === '/roster/new') return { kind: 'new' };
+
+  const edit = hash.match(/^\/roster\/([^/]+)$/);
+  if (edit) return { kind: 'edit', id: edit[1] };
+
+  return null;
+}
