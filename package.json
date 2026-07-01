@@ -7,6 +7,9 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/copy-data-to-dist.mjs",
+    "preview": "vite preview",
     "data:check": "node scripts/data/check-sources.mjs",
     "data:build": "node scripts/data/build-data-pack.mjs",
     "data:validate": "node scripts/data/validate-pack.mjs",
@@ -14,6 +17,14 @@
     "data:update": "node scripts/data/check-sources.mjs && node scripts/data/build-data-pack.mjs && node scripts/data/validate-pack.mjs"
   },
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "idb": "^8.0.3"
+  },
+  "devDependencies": {
+    "sirv": "^3.0.2",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.1",
+    "vite-plugin-pwa": "^0.21.2",
+    "workbox-window": "^7.4.0"
   }
 }

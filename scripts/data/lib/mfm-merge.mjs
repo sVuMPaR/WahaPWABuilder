@@ -15,6 +15,23 @@ export function normalizeName(name) {
 /**
  * @param {Record<string, any>} mfmFaction
  */
+function indexMfmEnhancements(mfmFaction) {
+  /** @type {Map<string, any>} */
+  const map = new Map();
+  for (const detachment of mfmFaction.detachments ?? []) {
+    for (const enhancement of detachment.enhancements ?? []) {
+      if (enhancement?.name) map.set(normalizeName(enhancement.name), enhancement);
+    }
+  }
+  for (const enhancement of mfmFaction.enhancements ?? []) {
+    if (enhancement?.name) map.set(normalizeName(enhancement.name), enhancement);
+  }
+  return map;
+}
+
+/**
+ * @param {Record<string, any>} mfmFaction
+ */
 function indexMfmUnits(mfmFaction) {
   /** @type {Map<string, any>} */
   const byName = new Map();
@@ -43,7 +60,7 @@ function indexByName(items) {
 export function mergeMfmIntoFaction(wahapediaFaction, mfmFaction) {
   const mfmUnits = indexMfmUnits(mfmFaction);
   const mfmDetachments = indexByName(mfmFaction.detachments);
-  const mfmEnhancements = indexByName(mfmFaction.enhancements);
+  const mfmEnhancements = indexMfmEnhancements(mfmFaction);
 
   let matchedUnits = 0;
   let unmatchedUnits = 0;
@@ -101,7 +118,13 @@ export function mergeMfmIntoFaction(wahapediaFaction, mfmFaction) {
   const enhancements = (wahapediaFaction.enhancements ?? []).map((enhancement) => {
     const mfmEnhancement = mfmEnhancements.get(normalizeName(enhancement.name));
     return mfmEnhancement
-      ? { ...enhancement, points: { cost: mfmEnhancement.points } }
+      ? {
+          ...enhancement,
+          points: {
+            cost: mfmEnhancement.points,
+            ...(mfmEnhancement.leaderTo ? { leaderTo: mfmEnhancement.leaderTo } : {}),
+          },
+        }
       : enhancement;
   });
 

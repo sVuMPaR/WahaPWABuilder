@@ -53,6 +53,10 @@ async function main() {
   console.log('Merging MFM points into Wahapedia packs...');
   const mergeStats = await mergeMfmIntoWahapediaPacks(wahapediaIndex, mfmMeta);
 
+  console.log('Slimming oversized faction packs...');
+  const { spawnSync } = await import('node:child_process');
+  spawnSync(process.execPath, ['scripts/data/slim-large-packs.mjs'], { stdio: 'inherit' });
+
   const manifest = {
     packVersion,
     builtAt,
