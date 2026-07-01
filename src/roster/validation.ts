@@ -72,7 +72,9 @@ export function isCharacter(datasheet: Datasheet): boolean {
 export function rosterHasCharacter(roster: Roster, datasheets: Map<string, Datasheet>): boolean {
   return roster.units.some((unit) => {
     const datasheet = datasheets.get(unit.datasheetId);
-    return datasheet ? isCharacter(datasheet) : false;
+    if (!datasheet) return false;
+    if (unit.mfmRole === 'leader' || unit.mfmRole === 'support') return true;
+    return isCharacter(datasheet);
   });
 }
 

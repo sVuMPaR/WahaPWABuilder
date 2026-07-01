@@ -12,12 +12,12 @@ import {
 import { copyRosterToClipboard, shareRoster } from '../roster/export';
 import {
   buildBodyguardIndex,
-  canAddLeader,
   clearAttachmentsToUnit,
   formatLeaderMeta,
   getAttachTargetNames,
   getAttachableUnits,
   getBodyguardLeaders,
+  getLeaderBodyguardHint,
   isBodyguardUnit,
   isLeaderOrSupport,
 } from '../roster/leaders';
@@ -269,16 +269,15 @@ function renderUnitPicker(
           const leaderHint = leaders.length
             ? `Bodyguard for: ${leaders.slice(0, 3).join(', ')}${leaders.length > 3 ? '…' : ''}`
             : '';
-          const leaderCheck = isLeaderOrSupport(sheet) ? canAddLeader(roster, sheet, sheets) : { ok: true as const };
-          const atLimit = !canAddUnitCopy(roster, sheet).ok || !leaderCheck.ok;
-          const blockTitle = !leaderCheck.ok ? leaderCheck.message : 'Copy limit reached';
+          const bodyguardHint = isLeaderOrSupport(sheet) ? getLeaderBodyguardHint(sheet, sheets) : null;
+          const atLimit = !canAddUnitCopy(roster, sheet).ok;
           return `
         <li class="picker-row${atLimit ? ' at-limit' : ''}">
           <div class="picker-main">
             <span class="picker-name">${escapeHtml(sheet.name)} ${renderUnitBadges(sheet, roster, bodyguardIndex)}</span>
-            <span class="picker-role">${escapeHtml(sheet.role ?? '')}${leaderHint ? ` · ${escapeHtml(leaderHint)}` : ''} · ${escapeHtml(copyLimitLabel(sheet))}${!leaderCheck.ok ? ` · ${escapeHtml(leaderCheck.message)}` : ''}</span>
+            <span class="picker-role">${escapeHtml(sheet.role ?? '')}${leaderHint ? ` · ${escapeHtml(leaderHint)}` : ''}${bodyguardHint ? ` · ${escapeHtml(bodyguardHint)}` : ''} · ${escapeHtml(copyLimitLabel(sheet))}</span>
           </div>
-          <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}"${atLimit ? ` disabled title="${escapeHtml(blockTitle)}"` : ''}>Add</button>
+          <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}"${atLimit ? ' disabled title="Copy limit reached"' : ''}>Add</button>
         </li>`;
         })
         .join('')}
@@ -322,7 +321,7 @@ function renderAttachPicker(roster: Roster, leaderUnit: RosterUnit, datasheet: D
       <div class="cost-picker-options">
         ${
           targets.length === 0
-            ? '<p class="empty">Add a compatible bodyguard unit first.</p>'
+            ? `<p class="empty">No compatible bodyguard in your list yet. Add one of: ${escapeHtml(getAttachTargetNames(datasheet, sheets).slice(0, 5).join(', '))}, then attach here or use the Attach button.</p>`
             : targets
                 .map(
                   (target) => `
@@ -576,14 +575,6 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
       return;
     }
 
-    if (isLeaderOrSupport(datasheet)) {
-      const leaderCheck = canAddLeader(current, datasheet, sheets);
-      if (!leaderCheck.ok) {
-        alert(leaderCheck.message);
-        return;
-      }
-    }
-
     const newUnit = createRosterUnit(datasheet, nextCopyIndex(current, datasheet.id), cost, tierLabel);
     current = {
       ...current,
@@ -611,14 +602,6 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
         if (!check.ok) {
           alert(check.message);
           return;
-        }
-
-        if (isLeaderOrSupport(datasheet)) {
-          const leaderCheck = canAddLeader(current, datasheet, sheets);
-          if (!leaderCheck.ok) {
-            alert(leaderCheck.message);
-            return;
-          }
         }
 
         const copyIndex = nextCopyIndex(current, datasheetId);
