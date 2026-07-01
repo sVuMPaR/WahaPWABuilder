@@ -65,6 +65,25 @@ export function canAddUnitCopy(
   return { ok: true };
 }
 
+export function isCharacter(datasheet: Datasheet): boolean {
+  return hasKeyword(datasheet, 'Character');
+}
+
+export function rosterHasCharacter(roster: Roster, datasheets: Map<string, Datasheet>): boolean {
+  return roster.units.some((unit) => {
+    const datasheet = datasheets.get(unit.datasheetId);
+    return datasheet ? isCharacter(datasheet) : false;
+  });
+}
+
+export function isRosterLegal(roster: Roster, datasheets: Map<string, Datasheet>): boolean {
+  return getRosterValidationIssues(roster, datasheets).every((issue) => issue.severity !== 'error');
+}
+
+export function getRosterErrors(roster: Roster, datasheets: Map<string, Datasheet>): ValidationIssue[] {
+  return getRosterValidationIssues(roster, datasheets).filter((issue) => issue.severity === 'error');
+}
+
 export function getRosterValidationIssues(
   roster: Roster,
   datasheets: Map<string, Datasheet>,
@@ -92,10 +111,17 @@ export function getRosterValidationIssues(
   for (const unit of roster.units) {
     if (unit.mfmRole && !unit.attachedToUnitId) {
       issues.push({
-        severity: 'warning',
-        message: `${unit.name} is not attached to a bodyguard unit`,
+        severity: 'error',
+        message: `${unit.name} must be attached to a bodyguard unit`,
       });
     }
+  }
+
+  if (roster.units.length > 0 && !rosterHasCharacter(roster, datasheets)) {
+    issues.push({
+      severity: 'error',
+      message: 'Army must include at least one Character unit',
+    });
   }
 
   if (isOverLimit(roster)) {

@@ -12,8 +12,10 @@ import {
 import { copyRosterToClipboard, shareRoster } from '../roster/export';
 import {
   buildBodyguardIndex,
+  canAddLeader,
   clearAttachmentsToUnit,
   formatLeaderMeta,
+  getAttachTargetNames,
   getAttachableUnits,
   getBodyguardLeaders,
   isBodyguardUnit,
@@ -23,9 +25,11 @@ import {
   canAddUnitCopy,
   copyLimitLabel,
   factionHasKeywordData,
+  getRosterErrors,
   getRosterValidationIssues,
   isBattleline,
   isEpicHero,
+  isRosterLegal,
   maxUnitCopies,
 } from '../roster/validation';
 import {
@@ -164,11 +168,19 @@ function renderValidationSection(
     : '';
 
   if (issues.length === 0 && !keywordNote) {
-    return '<p class="muted validation-ok">Army rules: within copy limits.</p>';
+    return '<p class="muted validation-ok">Army list is legal.</p>';
   }
+
+  const hasErrors = issues.some((issue) => issue.severity === 'error');
+  const status = hasErrors
+    ? '<p class="validation-status error">List has rule errors — fix before playing.</p>'
+    : issues.length
+      ? '<p class="validation-status warning">Warnings only.</p>'
+      : '';
 
   return `
     ${keywordNote}
+    ${status}
     ${
       issues.length
         ? `<ul class="validation-list">
@@ -194,16 +206,18 @@ function renderArmyList(roster: Roster, sheets: Map<string, Datasheet>): string 
         .map((unit) => {
           const datasheet = sheets.get(unit.datasheetId);
           const leaderMeta = unit.mfmRole ? formatLeaderMeta(roster, unit) : null;
+          const unattached = unit.mfmRole && !unit.attachedToUnitId;
           const copies = countDatasheetCopies(roster, unit.datasheetId);
           const max = datasheet ? maxUnitCopies(datasheet) : 3;
           const copyWarning = copies > max ? ' over-limit' : '';
           return `
-        <li class="army-row">
+        <li class="army-row${unattached ? ' army-row-error' : ''}">
           <div class="army-row-main">
             <span class="army-name">${escapeHtml(unit.name)}</span>
             <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models · ${copies}/${max}${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
           </div>
           <span class="army-points${copyWarning}">${unit.points} pts</span>
+          ${unattached ? `<button type="button" class="btn small army-attach" data-unit-id="${unit.id}" title="Attach to bodyguard">Attach</button>` : ''}
           <button type="button" class="btn icon danger army-remove" data-unit-id="${unit.id}" title="Remove unit">×</button>
         </li>`;
         })
@@ -235,6 +249,7 @@ function renderUnitPicker(
   query: string,
   roster: Roster,
   bodyguardIndex: ReturnType<typeof buildBodyguardIndex>,
+  sheets: Map<string, Datasheet>,
 ): string {
   const normalized = query.trim().toLowerCase();
   const available = datasheets
@@ -254,14 +269,16 @@ function renderUnitPicker(
           const leaderHint = leaders.length
             ? `Bodyguard for: ${leaders.slice(0, 3).join(', ')}${leaders.length > 3 ? '…' : ''}`
             : '';
-          const atLimit = !canAddUnitCopy(roster, sheet).ok;
+          const leaderCheck = isLeaderOrSupport(sheet) ? canAddLeader(roster, sheet, sheets) : { ok: true as const };
+          const atLimit = !canAddUnitCopy(roster, sheet).ok || !leaderCheck.ok;
+          const blockTitle = !leaderCheck.ok ? leaderCheck.message : 'Copy limit reached';
           return `
         <li class="picker-row${atLimit ? ' at-limit' : ''}">
           <div class="picker-main">
             <span class="picker-name">${escapeHtml(sheet.name)} ${renderUnitBadges(sheet, roster, bodyguardIndex)}</span>
-            <span class="picker-role">${escapeHtml(sheet.role ?? '')}${leaderHint ? ` · ${escapeHtml(leaderHint)}` : ''} · ${escapeHtml(copyLimitLabel(sheet))}</span>
+            <span class="picker-role">${escapeHtml(sheet.role ?? '')}${leaderHint ? ` · ${escapeHtml(leaderHint)}` : ''} · ${escapeHtml(copyLimitLabel(sheet))}${!leaderCheck.ok ? ` · ${escapeHtml(leaderCheck.message)}` : ''}</span>
           </div>
-          <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}"${atLimit ? ' disabled title="Copy limit reached"' : ''}>Add</button>
+          <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}"${atLimit ? ` disabled title="${escapeHtml(blockTitle)}"` : ''}>Add</button>
         </li>`;
         })
         .join('')}
@@ -315,7 +332,7 @@ function renderAttachPicker(roster: Roster, leaderUnit: RosterUnit, datasheet: D
                 )
                 .join('')
         }
-        <button type="button" class="btn ghost attach-skip">Skip for now</button>
+        <button type="button" class="btn ghost attach-cancel">Remove leader</button>
       </div>
     </div>`;
 }
@@ -383,15 +400,24 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
                 })()
               : ''
           }</div>
-          <div id="unit-picker">${renderUnitPicker(pack.datasheets, searchQuery, current, bodyguardIndex)}</div>
+          <div id="unit-picker">${renderUnitPicker(pack.datasheets, searchQuery, current, bodyguardIndex, sheets)}</div>
         </section>
       </section>
     `;
 
     root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/rosters'));
 
+    const ensureLegalForExport = (): boolean => {
+      if (isRosterLegal(current, sheets)) return true;
+      const errors = getRosterErrors(current, sheets);
+      alert(`Fix rule errors before exporting:\n\n${errors.map((e) => `• ${e.message}`).join('\n')}`);
+      return false;
+    };
+
     root.querySelector('#copy-roster-btn')?.addEventListener('click', async () => {
-      await copyRosterToClipboard(current);
+      if (!ensureLegalForExport()) return;
+      const issues = getRosterValidationIssues(current, sheets);
+      await copyRosterToClipboard(current, issues);
       const btn = root.querySelector<HTMLButtonElement>('#copy-roster-btn');
       if (btn) {
         const original = btn.textContent;
@@ -403,7 +429,9 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
     });
 
     root.querySelector('#share-roster-btn')?.addEventListener('click', async () => {
-      const shared = await shareRoster(current);
+      if (!ensureLegalForExport()) return;
+      const issues = getRosterValidationIssues(current, sheets);
+      const shared = await shareRoster(current, issues);
       if (!shared) {
         const btn = root.querySelector<HTMLButtonElement>('#share-roster-btn');
         if (btn) {
@@ -459,6 +487,14 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
 
     bindEnhancementForm();
 
+    for (const btn of root.querySelectorAll<HTMLButtonElement>('.army-attach')) {
+      btn.addEventListener('click', () => {
+        pendingLeaderUnitId = btn.dataset.unitId ?? null;
+        pendingDatasheetId = null;
+        rerender();
+      });
+    }
+
     for (const btn of root.querySelectorAll<HTMLButtonElement>('.army-remove')) {
       btn.addEventListener('click', async () => {
         const unitId = btn.dataset.unitId;
@@ -482,7 +518,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
     search?.addEventListener('input', () => {
       searchQuery = search.value;
       const picker = root.querySelector('#unit-picker');
-      if (picker) picker.innerHTML = renderUnitPicker(pack.datasheets, searchQuery, current, bodyguardIndex);
+      if (picker) picker.innerHTML = renderUnitPicker(pack.datasheets, searchQuery, current, bodyguardIndex, sheets);
       bindPickerButtons();
     });
 
@@ -540,6 +576,14 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
       return;
     }
 
+    if (isLeaderOrSupport(datasheet)) {
+      const leaderCheck = canAddLeader(current, datasheet, sheets);
+      if (!leaderCheck.ok) {
+        alert(leaderCheck.message);
+        return;
+      }
+    }
+
     const newUnit = createRosterUnit(datasheet, nextCopyIndex(current, datasheet.id), cost, tierLabel);
     current = {
       ...current,
@@ -567,6 +611,14 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
         if (!check.ok) {
           alert(check.message);
           return;
+        }
+
+        if (isLeaderOrSupport(datasheet)) {
+          const leaderCheck = canAddLeader(current, datasheet, sheets);
+          if (!leaderCheck.ok) {
+            alert(leaderCheck.message);
+            return;
+          }
         }
 
         const copyIndex = nextCopyIndex(current, datasheetId);
@@ -623,10 +675,15 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
     const leaderUnitId = picker.getAttribute('data-unit-id');
     if (!leaderUnitId) return;
 
-    picker.querySelector('.attach-skip')?.addEventListener('click', () => {
+    picker.querySelector('.attach-cancel')?.addEventListener('click', async () => {
+      current = {
+        ...current,
+        units: current.units.filter((unit) => unit.id !== leaderUnitId),
+        enhancements: pruneEnhancementsForRemovedUnit(current, leaderUnitId),
+      };
+      current = await persistRoster(current, sheets);
       pendingLeaderUnitId = null;
-      const slot = root.querySelector('#attach-picker-slot');
-      if (slot) slot.innerHTML = '';
+      rerender();
     });
 
     for (const btn of picker.querySelectorAll<HTMLButtonElement>('.attach-option')) {
