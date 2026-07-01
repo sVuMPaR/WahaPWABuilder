@@ -8,6 +8,14 @@ const base = process.env.VITE_BASE ?? (repoBase ? `/${repoBase}/` : '/');
 
 export default defineConfig({
   base,
+  server: {
+    host: true,
+    port: 5173,
+  },
+  preview: {
+    host: true,
+    port: 4173,
+  },
   plugins: [
     {
       name: 'serve-data-packs',
