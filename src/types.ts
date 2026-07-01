@@ -1,9 +1,16 @@
-export type BattleSize = 'incursion' | 'strike-force' | 'onslaught';
+export type BattleSize = 'incursion' | 'strike-force' | 'onslaught' | 'custom';
 
-export const BATTLE_SIZE_LIMITS: Record<BattleSize, number> = {
+export const BATTLE_SIZE_LIMITS: Record<Exclude<BattleSize, 'custom'>, number> = {
   incursion: 1000,
   'strike-force': 2000,
   onslaught: 3000,
+};
+
+export const CUSTOM_POINT_LIMIT = {
+  min: 250,
+  max: 10000,
+  step: 50,
+  default: 1500,
 };
 
 export interface DataManifest {
@@ -78,11 +85,19 @@ export interface Detachment {
   };
 }
 
+export interface DatasheetKeyword {
+  keyword: string;
+  isFactionKeyword?: string | boolean;
+  model?: string;
+  datasheetId?: string;
+}
+
 export interface Datasheet {
   id: string;
   name: string;
   role?: string;
   legend?: string;
+  keywords?: DatasheetKeyword[];
   points?: UnitPoints;
   enhancements?: DatasheetEnhancementRef[];
   leaderAttachments?: { leaderId: string; attachedId: string }[];

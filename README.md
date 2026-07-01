@@ -72,4 +72,7 @@ That hosted version is the same app; only **where** you run `npm` commands diffe
 
 - Faction browser with MFM points
 - Roster builder: detachments, enhancements (up to 3), leader attachments, export/copy
+- **Custom point limits** (250–10000) for casual play
+- **Army rules check**: Epic Hero max 1, Battleline max 6, other units max 3
+- **Bodyguard** tags from Wahapedia leader links + MFM `attachTo`
 - PWA offline support via service worker
