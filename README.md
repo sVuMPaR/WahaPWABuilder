@@ -19,13 +19,35 @@ Commands run in a **terminal on your machine**, not in the GitHub website or Git
    npm install
    ```
 
-3. **Start the dev server**:
+3. **Start the dev server** (leave this terminal open):
 
    ```bash
    npm run dev
    ```
 
-4. Open the URL Vite prints (usually `http://localhost:5173/WahaPWABuilder/`).
+4. Open the URL Vite prints in the terminal:
+   - On the **same computer**: `http://localhost:5173/`
+   - From **phone on the same Wi‑Fi**: use the **Network** URL (e.g. `http://192.168.1.42:5173/`) — `localhost` on a phone means the phone itself, not your PC
+
+### “Cannot access the site” / connection refused
+
+| Cause | Fix |
+|-------|-----|
+| Dev server not running | Run `npm run dev` and keep the terminal open |
+| Opened `localhost` on phone | Use the PC’s **Network** IP from the `npm run dev` output |
+| Wrong folder | `cd` into the cloned repo (must contain `package.json`) |
+| Node missing | Install [Node.js 22+](https://nodejs.org/), then `npm install` |
+| Port in use | Stop other Vite apps or run `npm run dev -- --port 5174` |
+
+Quick check on the PC:
+
+```bash
+cd WahaPWABuilder
+npm install
+npm run dev
+```
+
+You should see `VITE … ready` and `Local: http://localhost:5173/`. If the terminal shows errors instead, copy them when asking for help.
 
 Rosters are stored in **IndexedDB in your browser** on that device. They are not synced to GitHub.
 
@@ -50,4 +72,7 @@ That hosted version is the same app; only **where** you run `npm` commands diffe
 
 - Faction browser with MFM points
 - Roster builder: detachments, enhancements (up to 3), leader attachments, export/copy
+- **Custom point limits** (250–10000) for casual play
+- **Army rules check**: Epic Hero max 1, Battleline max 6, other units max 3
+- **Bodyguard** tags from Wahapedia leader links + MFM `attachTo`
 - PWA offline support via service worker

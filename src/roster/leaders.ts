@@ -1,4 +1,57 @@
-import type { Datasheet, Roster, RosterUnit } from '../types';
+import type { Datasheet, FactionPack, Roster, RosterUnit } from '../types';
+
+export interface BodyguardInfo {
+  /** Leader datasheet names that can attach to this unit */
+  leaders: string[];
+}
+
+/** Units that can be bodyguards for leaders (from MFM attachTo + Wahapedia leader links). */
+export function buildBodyguardIndex(pack: FactionPack): Map<string, BodyguardInfo> {
+  const index = new Map<string, BodyguardInfo>();
+  const byName = new Map(pack.datasheets.map((sheet) => [sheet.name.toLowerCase(), sheet]));
+
+  const addLeader = (bodyguardId: string, leaderName: string) => {
+    const entry = index.get(bodyguardId) ?? { leaders: [] };
+    if (!entry.leaders.includes(leaderName)) entry.leaders.push(leaderName);
+    index.set(bodyguardId, entry);
+  };
+
+  for (const leader of pack.datasheets) {
+    for (const name of leader.points?.attachTo ?? []) {
+      const bodyguard = byName.get(name.toLowerCase());
+      if (bodyguard) addLeader(bodyguard.id, leader.name);
+    }
+
+    for (const link of leader.leaderAttachments ?? []) {
+      addLeader(link.attachedId, leader.name);
+    }
+  }
+
+  return index;
+}
+
+export function isBodyguardUnit(datasheetId: string, index: Map<string, BodyguardInfo>): boolean {
+  return index.has(datasheetId);
+}
+
+export function getBodyguardLeaders(datasheetId: string, index: Map<string, BodyguardInfo>): string[] {
+  return index.get(datasheetId)?.leaders ?? [];
+}
+
+export function canAddLeader(
+  roster: Roster,
+  leaderDatasheet: Datasheet,
+  datasheets: Map<string, Datasheet>,
+): { ok: true } | { ok: false; message: string } {
+  const targets = getAttachableUnits(roster, leaderDatasheet, datasheets);
+  if (targets.length > 0) return { ok: true };
+
+  const names = getAttachTargetNames(leaderDatasheet, datasheets);
+  const hint = names.length
+    ? ` Add a bodyguard first, e.g. ${names.slice(0, 4).join(', ')}${names.length > 4 ? '…' : ''}.`
+    : ' Add a compatible bodyguard unit to your list first.';
+  return { ok: false, message: `${leaderDatasheet.name} cannot be added yet.${hint}` };
+}
 
 export function isLeaderOrSupport(datasheet: Datasheet): boolean {
   const role = datasheet.points?.role;

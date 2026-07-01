@@ -4,7 +4,7 @@ import { rosterGrandTotal } from '../roster/points';
 import { escapeHtml } from '../util/html';
 import { navigate } from '../router';
 import type { BattleSize, Roster } from '../types';
-import { BATTLE_SIZE_LIMITS } from '../types';
+import { BATTLE_SIZE_LIMITS, CUSTOM_POINT_LIMIT } from '../types';
 
 export async function renderRosterList(root: HTMLElement) {
   const [rosters, factions, manifest] = await Promise.all([
@@ -94,11 +94,24 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
         </label>
         <label class="field">
           <span>Battle size</span>
-          <select name="battleSize" required>
+          <select name="battleSize" id="battle-size-select" required>
             <option value="incursion">Incursion (${BATTLE_SIZE_LIMITS.incursion} pts)</option>
             <option value="strike-force" selected>Strike Force (${BATTLE_SIZE_LIMITS['strike-force']} pts)</option>
             <option value="onslaught">Onslaught (${BATTLE_SIZE_LIMITS.onslaught} pts)</option>
+            <option value="custom">Custom limit…</option>
           </select>
+        </label>
+        <label class="field" id="custom-points-field" hidden>
+          <span>Point limit</span>
+          <input
+            type="number"
+            name="customPoints"
+            min="${CUSTOM_POINT_LIMIT.min}"
+            max="${CUSTOM_POINT_LIMIT.max}"
+            step="${CUSTOM_POINT_LIMIT.step}"
+            value="${CUSTOM_POINT_LIMIT.default}"
+          />
+          <span class="muted field-hint">${CUSTOM_POINT_LIMIT.min}–${CUSTOM_POINT_LIMIT.max} pts, casual / open play</span>
         </label>
         <div class="form-actions">
           <button type="submit" class="btn primary">Create roster</button>
@@ -110,6 +123,13 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
 
   root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/rosters'));
 
+  const battleSizeSelect = root.querySelector<HTMLSelectElement>('#battle-size-select');
+  const customField = root.querySelector<HTMLLabelElement>('#custom-points-field');
+  battleSizeSelect?.addEventListener('change', () => {
+    if (!customField) return;
+    customField.hidden = battleSizeSelect.value !== 'custom';
+  });
+
   root.querySelector<HTMLFormElement>('#new-roster-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget as HTMLFormElement;
@@ -119,6 +139,15 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
     if (!faction) return;
 
     const battleSize = String(data.get('battleSize')) as BattleSize;
+    let pointLimit = BATTLE_SIZE_LIMITS[battleSize as keyof typeof BATTLE_SIZE_LIMITS];
+    if (battleSize === 'custom') {
+      const custom = Number(data.get('customPoints'));
+      pointLimit =
+        Number.isFinite(custom) && custom >= CUSTOM_POINT_LIMIT.min && custom <= CUSTOM_POINT_LIMIT.max
+          ? custom
+          : CUSTOM_POINT_LIMIT.default;
+    }
+
     const now = new Date().toISOString();
     const roster: Roster = {
       id: crypto.randomUUID(),
@@ -128,7 +157,7 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
       packVersion: manifest.packVersion,
       mfmVersion: manifest.sources?.mfm?.version,
       battleSize,
-      pointLimit: BATTLE_SIZE_LIMITS[battleSize],
+      pointLimit,
       createdAt: now,
       updatedAt: now,
       units: [],

@@ -55,6 +55,7 @@ async function main() {
 
   console.log('Slimming oversized faction packs...');
   const { spawnSync } = await import('node:child_process');
+  spawnSync(process.execPath, ['scripts/data/inject-keywords.mjs'], { stdio: 'inherit' });
   spawnSync(process.execPath, ['scripts/data/slim-large-packs.mjs'], { stdio: 'inherit' });
 
   const manifest = {

@@ -2,8 +2,9 @@ import { enhancementTotalPoints } from './enhancements';
 import { getAttachedUnitName } from './leaders';
 import { rosterTotalPoints } from './points';
 import type { Roster } from '../types';
+import type { ValidationIssue } from './validation';
 
-export function formatRosterAsText(roster: Roster): string {
+export function formatRosterAsText(roster: Roster, validationIssues?: ValidationIssue[]): string {
   const lines: string[] = [];
   const unitPoints = rosterTotalPoints(roster);
   const enhancementPoints = enhancementTotalPoints(roster);
@@ -36,18 +37,32 @@ export function formatRosterAsText(roster: Roster): string {
 
   lines.push('');
   lines.push(`Total: ${total} / ${roster.pointLimit} pts`);
+
+  const errors = validationIssues?.filter((issue) => issue.severity === 'error') ?? [];
+  if (errors.length) {
+    lines.push('');
+    lines.push('⚠ List has rule errors:');
+    for (const issue of errors) lines.push(`  - ${issue.message}`);
+  }
+
   if (roster.packVersion) lines.push(`Data pack v${roster.packVersion}`);
 
   return lines.join('\n');
 }
 
-export async function copyRosterToClipboard(roster: Roster): Promise<void> {
-  const text = formatRosterAsText(roster);
+export async function copyRosterToClipboard(
+  roster: Roster,
+  validationIssues?: ValidationIssue[],
+): Promise<void> {
+  const text = formatRosterAsText(roster, validationIssues);
   await navigator.clipboard.writeText(text);
 }
 
-export async function shareRoster(roster: Roster): Promise<boolean> {
-  const text = formatRosterAsText(roster);
+export async function shareRoster(
+  roster: Roster,
+  validationIssues?: ValidationIssue[],
+): Promise<boolean> {
+  const text = formatRosterAsText(roster, validationIssues);
   if (navigator.share) {
     await navigator.share({ title: roster.name, text });
     return true;

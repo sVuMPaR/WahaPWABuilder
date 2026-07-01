@@ -14,6 +14,7 @@ const DATASHEET_KEYS = [
   'name',
   'role',
   'legend',
+  'keywords',
   'points',
   'enhancements',
   'leaderAttachments',
