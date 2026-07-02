@@ -38,19 +38,13 @@ export function getBodyguardLeaders(datasheetId: string, index: Map<string, Body
   return index.get(datasheetId)?.leaders ?? [];
 }
 
-export function canAddLeader(
-  roster: Roster,
+export function getLeaderBodyguardHint(
   leaderDatasheet: Datasheet,
   datasheets: Map<string, Datasheet>,
-): { ok: true } | { ok: false; message: string } {
-  const targets = getAttachableUnits(roster, leaderDatasheet, datasheets);
-  if (targets.length > 0) return { ok: true };
-
+): string | null {
   const names = getAttachTargetNames(leaderDatasheet, datasheets);
-  const hint = names.length
-    ? ` Add a bodyguard first, e.g. ${names.slice(0, 4).join(', ')}${names.length > 4 ? '…' : ''}.`
-    : ' Add a compatible bodyguard unit to your list first.';
-  return { ok: false, message: `${leaderDatasheet.name} cannot be added yet.${hint}` };
+  if (!names.length) return null;
+  return `Attaches to: ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}`;
 }
 
 export function isLeaderOrSupport(datasheet: Datasheet): boolean {
