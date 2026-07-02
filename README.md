@@ -59,14 +59,45 @@ Rosters are stored in **IndexedDB in your browser** on that device. They are not
 | `npm run preview` | Serve the built app locally |
 | `npm run data:update` | Re-fetch Wahapedia + MFM and rebuild data packs |
 
+## GitHub Pages (бесплатный хостинг для тестов)
+
+В репозитории уже есть workflow **Deploy PWA** — он собирает приложение и выкладывает на GitHub Pages при каждом push в `main`.
+
+### Один раз включить Pages
+
+1. Открой репозиторий на GitHub → **Settings** → **Pages**
+2. В **Build and deployment** → **Source** выбери **GitHub Actions** (не «Deploy from branch»)
+3. Сохрани
+
+### URL приложения
+
+После успешного деплоя:
+
+**https://svumpar.github.io/WahaPWABuilder/**
+
+(имя репозитория в пути обязательно; регистр username в URL GitHub обычно не важен)
+
+### Проверить деплой
+
+- **Actions** → workflow **Deploy PWA** → последний run должен быть зелёным
+- Или вручную: **Actions** → **Deploy PWA** → **Run workflow**
+
+На телефоне можно открыть URL в Chrome/Safari и «Добавить на экран» — PWA будет работать офлайн после первой загрузки.
+
+Ростеры по-прежнему хранятся **в браузере устройства**, не на сервере.
+
+---
+
 ## GitHub Pages (hosted app)
 
-After merge to `main`, CI deploys the built PWA to GitHub Pages. You can use the app in the browser without installing Node — open the Pages URL from the repository **Settings → Pages**.
+After merge to `main`, CI deploys the built PWA to GitHub Pages. Enable **Settings → Pages → Source: GitHub Actions**, then open:
+
+**https://svumpar.github.io/WahaPWABuilder/**
 
 That hosted version is the same app; only **where** you run `npm` commands differs:
 
 - **Local development** → your terminal + `npm run dev`
-- **Using the app** → browser (local dev URL or GitHub Pages)
+- **Using the app** → browser (GitHub Pages URL above)
 
 ## Features
 
