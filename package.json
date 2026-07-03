@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && node scripts/stage-public-data.mjs && vite build && node scripts/copy-data-to-dist.mjs",
+    "build": "tsc --noEmit && vitest run && node scripts/stage-public-data.mjs && vite build && node scripts/copy-data-to-dist.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview",
     "data:check": "node scripts/data/check-sources.mjs",
     "data:build": "node scripts/data/build-data-pack.mjs",
@@ -24,6 +26,7 @@
     "sirv": "^3.0.2",
     "typescript": "^5.9.3",
     "vite": "^6.4.1",
+    "vitest": "^3.2.4",
     "vite-plugin-pwa": "^0.21.2",
     "workbox-window": "^7.4.0"
   }
