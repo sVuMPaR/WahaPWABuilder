@@ -3,3 +3,5 @@ data/.check-result.json
 data/.raw/
 dist/
 dev-dist/
+public/data/
+.vite/

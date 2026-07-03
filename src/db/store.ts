@@ -51,6 +51,16 @@ export async function getCachedFaction(id: string): Promise<FactionPack | null> 
   return row?.pack ?? null;
 }
 
+export async function cacheMeta(key: string, value: unknown): Promise<void> {
+  const db = await getDb();
+  await db.put('meta', value, key);
+}
+
+export async function getCachedMeta<T>(key: string): Promise<T | null> {
+  const db = await getDb();
+  return ((await db.get('meta', key)) as T | undefined) ?? null;
+}
+
 export async function listRosters(): Promise<Roster[]> {
   const db = await getDb();
   const rosters = await db.getAll('rosters');

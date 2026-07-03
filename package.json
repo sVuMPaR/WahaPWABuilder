@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/copy-data-to-dist.mjs",
+    "build": "tsc --noEmit && node scripts/stage-public-data.mjs && vite build && node scripts/copy-data-to-dist.mjs",
     "preview": "vite preview",
     "data:check": "node scripts/data/check-sources.mjs",
     "data:build": "node scripts/data/build-data-pack.mjs",

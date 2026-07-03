@@ -50,15 +50,18 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,svg,woff2,json}'],
+        globIgnores: ['**/data/wahapedia/factions/**', '**/data/mfm/**'],
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/data\//],
         runtimeCaching: [
           {
             urlPattern: /\/data\//,
-            handler: 'CacheFirst',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'data-packs',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
