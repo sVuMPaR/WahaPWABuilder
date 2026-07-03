@@ -1,4 +1,4 @@
-import { loadFactionIndex, loadFactionPack } from '../data/loader';
+import { loadFactionIndex, loadFactionPack, isOfflineDataError } from '../data/loader';
 import { getRoster, saveRoster } from '../db/store';
 import {
   canAddEnhancement,
@@ -699,13 +699,26 @@ export async function renderRosterEditor(root: HTMLElement, rosterId: string) {
     return;
   }
 
-  const index = await loadFactionIndex();
-  const entry = index.find((faction) => faction.id === roster.factionId);
-  if (!entry) {
-    root.innerHTML = `<p class="error">Faction data missing for this roster.</p>`;
-    return;
-  }
+  try {
+    const index = await loadFactionIndex();
+    const entry = index.find((faction) => faction.id === roster.factionId);
+    if (!entry) {
+      root.innerHTML = `<p class="error">Faction data missing for this roster.</p>`;
+      return;
+    }
 
-  const pack = await loadFactionPack(entry.id, entry.path);
-  bindEditor(root, normalizeRoster(roster), pack);
+    const pack = await loadFactionPack(entry.id, entry.path);
+    bindEditor(root, normalizeRoster(roster), pack);
+  } catch (error) {
+    const message = isOfflineDataError(error)
+      ? error.message
+      : 'Could not load faction data for this roster.';
+    root.innerHTML = `
+      <section class="panel">
+        <p class="error">${message}</p>
+        <p class="muted offline-tip">Open this faction while online to edit the roster offline later.</p>
+        <p><a href="#/rosters">← Back to rosters</a></p>
+      </section>
+    `;
+  }
 }

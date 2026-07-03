@@ -196,6 +196,11 @@ a {
   text-align: right;
 }
 
+.offline-tip {
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+
 .loading,
 .empty,
 .error,

@@ -1,11 +1,27 @@
-import { loadFactionIndex, loadFactionPack, loadManifest, getUnitPoints } from '../data/loader';
+import { loadFactionIndex, loadFactionPack, loadManifest, getUnitPoints, isOfflineDataError } from '../data/loader';
+import { escapeHtml } from '../util/html';
 import { navigate } from '../router';
+
+function renderOfflineError(root: HTMLElement, title: string, message: string, backLabel = '← Factions') {
+  root.innerHTML = `
+    <section class="panel">
+      <header class="panel-header">
+        <button type="button" class="back" id="back-btn">${escapeHtml(backLabel)}</button>
+        <h2>${escapeHtml(title)}</h2>
+      </header>
+      <p class="error">${escapeHtml(message)}</p>
+      <p class="muted offline-tip">While online: open <strong>Factions</strong>, then open each army you need. Rosters you already created stay available offline.</p>
+    </section>
+  `;
+  root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/'));
+}
 
 export async function renderFactionList(root: HTMLElement) {
   root.innerHTML = '<p class="loading">Loading factions…</p>';
 
-  const [manifest, factions] = await Promise.all([loadManifest(), loadFactionIndex()]);
-  factions.sort((a, b) => a.name.localeCompare(b.name));
+  try {
+    const [manifest, factions] = await Promise.all([loadManifest(), loadFactionIndex()]);
+    factions.sort((a, b) => a.name.localeCompare(b.name));
 
   root.innerHTML = `
     <section class="panel">
@@ -54,19 +70,26 @@ export async function renderFactionList(root: HTMLElement) {
       navigate(`/faction/${card.dataset.id}`);
     });
   }
+  } catch (error) {
+    const message = isOfflineDataError(error)
+      ? error.message
+      : 'Could not load factions.';
+    renderOfflineError(root, 'Offline', message);
+  }
 }
 
 export async function renderFactionDetail(root: HTMLElement, factionId: string) {
   root.innerHTML = '<p class="loading">Loading faction…</p>';
 
-  const index = await loadFactionIndex();
-  const entry = index.find((f) => f.id === factionId);
-  if (!entry) {
-    root.innerHTML = `<p class="error">Faction not found.</p>`;
-    return;
-  }
+  try {
+    const index = await loadFactionIndex();
+    const entry = index.find((f) => f.id === factionId);
+    if (!entry) {
+      root.innerHTML = `<p class="error">Faction not found.</p>`;
+      return;
+    }
 
-  const pack = await loadFactionPack(entry.id, entry.path);
+    const pack = await loadFactionPack(entry.id, entry.path);
   const withPoints = pack.datasheets.filter((d) => getUnitPoints(d) !== null).length;
 
   pack.datasheets.sort((a, b) => a.name.localeCompare(b.name));
@@ -99,4 +122,10 @@ export async function renderFactionDetail(root: HTMLElement, factionId: string) 
 
   root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/'));
   root.querySelector('#build-roster-btn')?.addEventListener('click', () => navigate(`/roster/new/${factionId}`));
+  } catch (error) {
+    const message = isOfflineDataError(error)
+      ? error.message
+      : 'Could not load this faction.';
+    renderOfflineError(root, 'Offline', message);
+  }
 }
