@@ -58,6 +58,7 @@ Rosters are stored in **IndexedDB in your browser** on that device. They are not
 | `npm run build` | Production build → `dist/` |
 | `npm run preview` | Serve the built app locally |
 | `npm run data:update` | Re-fetch Wahapedia + MFM and rebuild data packs |
+| `npm test` | Unit-тесты (Vitest) — см. [TESTING.md](TESTING.md) |
 
 ## GitHub Pages (бесплатный хостинг для тестов)
 
