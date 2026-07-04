@@ -1,110 +1,63 @@
 # Waha PWA Builder
 
-Offline-capable Warhammer 40k army list builder (11th edition). Data from [Wahapedia](https://wahapedia.ru/) and [MFM](https://mfm.warhammer-community.com/).
+Офлайн-конструктор армейских списков Warhammer 40k (11-е издание). Данные из [Wahapedia](https://wahapedia.ru/) и [MFM](https://mfm.warhammer-community.com/).
 
-## Run locally (on your computer)
+**Открыть приложение:** [https://svumpar.github.io/WahaPWABuilder/](https://svumpar.github.io/WahaPWABuilder/)
 
-Commands run in a **terminal on your machine**, not in the GitHub website or GitHub Desktop UI.
+## Возможности
 
-1. **Clone the repo** (once):
+- Каталог фракций с очками MFM
+- Сборка ростера: детачменты, enhancements (до 3), привязка лидеров, экспорт/копирование списка
+- **Свой лимит очков** (250–10000) для казуальных игр
+- **Проверка правил армии**: Epic Hero максимум 1, Battleline максимум 6, остальные юниты максимум 3
+- **Метки Bodyguard** по связям Wahapedia и полю `attachTo` из MFM
+- PWA: работает офлайн после предварительной загрузки данных
 
-   ```bash
-   git clone https://github.com/sVuMPaR/WahaPWABuilder.git
-   cd WahaPWABuilder
-   ```
+## Офлайн-режим
 
-2. **Install dependencies** (Node.js 22+ required):
+Приложение хранит ростеры **только на вашем устройстве** (IndexedDB в браузере). На сервер ничего не отправляется.
 
-   ```bash
-   npm install
-   ```
+### Установка на телефон (рекомендуется)
 
-3. **Start the dev server** (leave this terminal open):
+1. Откройте [https://svumpar.github.io/WahaPWABuilder/](https://svumpar.github.io/WahaPWABuilder/) в Chrome (Android) или Safari (iOS).
+2. **Добавьте на экран** / «Установить приложение» — так PWA откроется как отдельное приложение и лучше кэширует данные.
 
-   ```bash
-   npm run dev
-   ```
+### Обязательно: один раз загрузить данные онлайн
 
-4. Open the URL Vite prints in the terminal:
-   - On the **same computer**: `http://localhost:5173/`
-   - From **phone on the same Wi‑Fi**: use the **Network** URL (e.g. `http://192.168.1.42:5173/`) — `localhost` on a phone means the phone itself, not your PC
+Офлайн работают **только те фракции, которые вы уже открывали при включённом интернете**. Иначе вместо бесконечной загрузки вы увидите сообщение об ошибке — это нормально.
 
-### “Cannot access the site” / connection refused
+**Перед игрой без сети сделайте так (с Wi‑Fi или мобильным интернетом):**
 
-| Cause | Fix |
-|-------|-----|
-| Dev server not running | Run `npm run dev` and keep the terminal open |
-| Opened `localhost` on phone | Use the PC’s **Network** IP from the `npm run dev` output |
-| Wrong folder | `cd` into the cloned repo (must contain `package.json`) |
-| Node missing | Install [Node.js 22+](https://nodejs.org/), then `npm install` |
-| Port in use | Stop other Vite apps or run `npm run dev -- --port 5174` |
+1. Откройте приложение → раздел **Factions** — загрузится каталог фракций.
+2. Зайдите **в каждую фракцию**, с которой планируете играть (например Necrons, Space Marines). Дождитесь списка юнитов.
+3. При необходимости создайте или откройте ростеры в разделе **Rosters** — они сохраняются на устройстве.
 
-Quick check on the PC:
+После этого можно отключить интернет: каталог, открытые фракции и ваши ростеры останутся доступны.
 
-```bash
-cd WahaPWABuilder
-npm install
-npm run dev
+### Что работает офлайн
+
+| Действие | Офлайн |
+|----------|--------|
+| Список фракций (если открывали Factions онлайн) | ✅ |
+| Фракция, которую открывали хотя бы раз онлайн | ✅ |
+| Редактирование сохранённых ростеров | ✅ |
+| Новая фракция, которую **никогда** не открывали | ❌ — нужен интернет |
+| Обновление данных Wahapedia/MFM | ❌ — только онлайн |
+
+### Если что-то не грузится
+
+- **«Loading faction…» долго не исчезает** — включите интернет, откройте эту фракцию и дождитесь списка юнитов, затем снова попробуйте офлайн.
+- **Экран с ошибкой про офлайн-данные** — фракция ещё не была закэширована; откройте её онлайн один раз.
+- **Space Marines** — большой пак (~1.3 MB); на слабом соединении подождите 10–20 секунд при первой загрузке.
+- **Ростеры пропали** — они привязаны к браузеру и устройству; очистка данных сайта или другой браузер = пустой список.
+
+### Краткая памятка
+
+```
+Онлайн:  Factions → открыть нужные армии → Rosters (по желанию)
+Офлайн:  те же фракции и ростеры доступны без сети
 ```
 
-You should see `VITE … ready` and `Local: http://localhost:5173/`. If the terminal shows errors instead, copy them when asking for help.
+## Для разработчиков
 
-Rosters are stored in **IndexedDB in your browser** on that device. They are not synced to GitHub.
-
-### Other commands
-
-| Command | Purpose |
-|---------|---------|
-| `npm run build` | Production build → `dist/` |
-| `npm run preview` | Serve the built app locally |
-| `npm run data:update` | Re-fetch Wahapedia + MFM and rebuild data packs |
-| `npm test` | Unit-тесты (Vitest) — см. [TESTING.md](TESTING.md) |
-
-## GitHub Pages (бесплатный хостинг для тестов)
-
-В репозитории уже есть workflow **Deploy PWA** — он собирает приложение и выкладывает на GitHub Pages при каждом push в `main`.
-
-### Один раз включить Pages
-
-1. Открой репозиторий на GitHub → **Settings** → **Pages**
-2. В **Build and deployment** → **Source** выбери **GitHub Actions** (не «Deploy from branch»)
-3. Сохрани
-
-### URL приложения
-
-После успешного деплоя:
-
-**https://svumpar.github.io/WahaPWABuilder/**
-
-(имя репозитория в пути обязательно; регистр username в URL GitHub обычно не важен)
-
-### Проверить деплой
-
-- **Actions** → workflow **Deploy PWA** → последний run должен быть зелёным
-- Или вручную: **Actions** → **Deploy PWA** → **Run workflow**
-
-На телефоне можно открыть URL в Chrome/Safari и «Добавить на экран» — PWA будет работать офлайн после первой загрузки.
-
-Ростеры по-прежнему хранятся **в браузере устройства**, не на сервере.
-
----
-
-## GitHub Pages (hosted app)
-
-After merge to `main`, CI deploys the built PWA to GitHub Pages. Enable **Settings → Pages → Source: GitHub Actions**, then open:
-
-**https://svumpar.github.io/WahaPWABuilder/**
-
-That hosted version is the same app; only **where** you run `npm` commands differs:
-
-- **Local development** → your terminal + `npm run dev`
-- **Using the app** → browser (GitHub Pages URL above)
-
-## Features
-
-- Faction browser with MFM points
-- Roster builder: detachments, enhancements (up to 3), leader attachments, export/copy
-- **Custom point limits** (250–10000) for casual play
-- **Army rules check**: Epic Hero max 1, Battleline max 6, other units max 3
-- **Bodyguard** tags from Wahapedia leader links + MFM `attachTo`
-- PWA offline support via service worker
+Ручной чеклист и автотесты: [TESTING.md](TESTING.md)
