@@ -4,13 +4,6 @@
   "contentHash": "437aac72de54b8cd24652e8f7f343178c2dae7f90d4d5e6c713742dc8fda6565",
   "factions": [
     {
-      "slug": "adeptus-mechanicus",
-      "name": "Adeptus Mechanicus",
-      "unitCount": 34,
-      "detachmentCount": 10,
-      "hash": "9f2ce7c6c1d04fa4deb357d648ab1ff701925c4bbb9c4a1e0e47d135176e2033"
-    },
-    {
       "slug": "adeptus-custodes",
       "name": "Adeptus Custodes",
       "unitCount": 31,
@@ -25,11 +18,11 @@
       "hash": "0abb8f51df59130420955788fc57bbb07def505795cacfd5dabf152cb80e7588"
     },
     {
-      "slug": "aeldari",
-      "name": "Aeldari",
-      "unitCount": 72,
-      "detachmentCount": 15,
-      "hash": "a1d57c560f91a18be05d7a6c40b73a16a0436985b7981184275cf703b6f814f1"
+      "slug": "adeptus-mechanicus",
+      "name": "Adeptus Mechanicus",
+      "unitCount": 34,
+      "detachmentCount": 10,
+      "hash": "9f2ce7c6c1d04fa4deb357d648ab1ff701925c4bbb9c4a1e0e47d135176e2033"
     },
     {
       "slug": "astra-militarum",
@@ -39,6 +32,13 @@
       "hash": "85bda60a8ff8af51552711c42b1c0a4f9c70c6124378d7261639faa7a3edc1fc"
     },
     {
+      "slug": "aeldari",
+      "name": "Aeldari",
+      "unitCount": 72,
+      "detachmentCount": 15,
+      "hash": "a1d57c560f91a18be05d7a6c40b73a16a0436985b7981184275cf703b6f814f1"
+    },
+    {
       "slug": "black-templars",
       "name": "Black Templars",
       "unitCount": 90,
@@ -46,18 +46,18 @@
       "hash": "48471879ecab64382f1c114655b63031bdd993f6e7a0f16d2cb00808f9ca8e5e"
     },
     {
-      "slug": "chaos-daemons",
-      "name": "Chaos Daemons",
-      "unitCount": 53,
-      "detachmentCount": 9,
-      "hash": "87c897e0f51f2c0d0f94f862bedb6893bdf59f042108f8c9ce98e059a0c2cfca"
-    },
-    {
       "slug": "blood-angels",
       "name": "Blood Angels",
       "unitCount": 99,
       "detachmentCount": 23,
       "hash": "da953044945c8116929e0a543920acc52fe8139850ad52871c52b6f8fdf2d680"
+    },
+    {
+      "slug": "chaos-daemons",
+      "name": "Chaos Daemons",
+      "unitCount": 53,
+      "detachmentCount": 9,
+      "hash": "87c897e0f51f2c0d0f94f862bedb6893bdf59f042108f8c9ce98e059a0c2cfca"
     },
     {
       "slug": "chaos-knights",
@@ -74,13 +74,6 @@
       "hash": "aaac7c8223bde6d4525f5c48383d448adcb9460a33811c41425da9ef3c47a322"
     },
     {
-      "slug": "chaos-space-marines",
-      "name": "Chaos Space Marines",
-      "unitCount": 54,
-      "detachmentCount": 17,
-      "hash": "dcd38cb43f8065d59bd850ba49bfdb3499c10f3ca6e7243d58782f7a71763dc6"
-    },
-    {
       "slug": "dark-angels",
       "name": "Dark Angels",
       "unitCount": 100,
@@ -93,6 +86,20 @@
       "unitCount": 36,
       "detachmentCount": 9,
       "hash": "3276ea8d1060bab05e5c3e948f30a7e9419a9d8d9374b1ef8728d29851a49f58"
+    },
+    {
+      "slug": "chaos-space-marines",
+      "name": "Chaos Space Marines",
+      "unitCount": 54,
+      "detachmentCount": 17,
+      "hash": "dcd38cb43f8065d59bd850ba49bfdb3499c10f3ca6e7243d58782f7a71763dc6"
+    },
+    {
+      "slug": "drukhari",
+      "name": "Drukhari",
+      "unitCount": 23,
+      "detachmentCount": 9,
+      "hash": "7a7dfbb64eaa615c85a6d4e127e6e0058809974aead22db07331a4a8c057c91e"
     },
     {
       "slug": "deathwatch",
@@ -116,11 +123,11 @@
       "hash": "ac52bd282b49a283deb6572706dfa1c0d3630b9a790ea212b4ff7bd6d0daea45"
     },
     {
-      "slug": "drukhari",
-      "name": "Drukhari",
-      "unitCount": 23,
+      "slug": "grey-knights",
+      "name": "Grey Knights",
+      "unitCount": 26,
       "detachmentCount": 9,
-      "hash": "7a7dfbb64eaa615c85a6d4e127e6e0058809974aead22db07331a4a8c057c91e"
+      "hash": "29a79f61eebf4c8557475f505d144a6ebe047ebb2816c4849f1c106644e91d1c"
     },
     {
       "slug": "imperial-agents",
@@ -137,11 +144,11 @@
       "hash": "f7c9f2257fd264ff4e055d8295f59ae2f9b7ea986af04ba3971add34da006f6b"
     },
     {
-      "slug": "grey-knights",
-      "name": "Grey Knights",
-      "unitCount": 26,
-      "detachmentCount": 9,
-      "hash": "29a79f61eebf4c8557475f505d144a6ebe047ebb2816c4849f1c106644e91d1c"
+      "slug": "necrons",
+      "name": "Necrons",
+      "unitCount": 52,
+      "detachmentCount": 12,
+      "hash": "b7eb7949331d7893895693f1bd2c9000f40c3745c191ecdfb04816bc29ac7736"
     },
     {
       "slug": "leagues-of-votann",
@@ -149,13 +156,6 @@
       "unitCount": 22,
       "detachmentCount": 10,
       "hash": "365df95f28de11e8e9690e46cd80d70858c8cb994994b4c9c5541cdf0fd32083"
-    },
-    {
-      "slug": "necrons",
-      "name": "Necrons",
-      "unitCount": 52,
-      "detachmentCount": 12,
-      "hash": "b7eb7949331d7893895693f1bd2c9000f40c3745c191ecdfb04816bc29ac7736"
     },
     {
       "slug": "orks",
@@ -172,6 +172,13 @@
       "hash": "cda740830d4603f71ae7e6dd03b8df8f5da4674930054dd24f0f82cb364012c4"
     },
     {
+      "slug": "space-wolves",
+      "name": "Space Wolves",
+      "unitCount": 101,
+      "detachmentCount": 22,
+      "hash": "060b1057ccc7ac5d7cea63d9df24ebe67fca54d2c26e2cf45c1dc4effb32bede"
+    },
+    {
       "slug": "tau-empire",
       "name": "T’au Empire",
       "unitCount": 43,
@@ -184,13 +191,6 @@
       "unitCount": 34,
       "detachmentCount": 9,
       "hash": "8ad72def1b34f937433219c733c02306a710ce654c0c22c4856b6f0f4f3d83ff"
-    },
-    {
-      "slug": "space-wolves",
-      "name": "Space Wolves",
-      "unitCount": 101,
-      "detachmentCount": 22,
-      "hash": "060b1057ccc7ac5d7cea63d9df24ebe67fca54d2c26e2cf45c1dc4effb32bede"
     },
     {
       "slug": "titan-legions",

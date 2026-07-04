@@ -1,3 +1,5 @@
+import { renderStatsPreviewHtml, openDatasheetModal } from '../datasheet/modal';
+import { applyUnitWargear, unitTotalPoints } from '../datasheet/wargear';
 import { loadFactionIndex, loadFactionPack, isOfflineDataError } from '../data/loader';
 import { getRoster, saveRoster } from '../db/store';
 import {
@@ -211,13 +213,18 @@ function renderArmyList(roster: Roster, sheets: Map<string, Datasheet>): string 
           const copies = countDatasheetCopies(roster, unit.datasheetId);
           const max = datasheet ? maxUnitCopies(datasheet) : 3;
           const copyWarning = copies > max ? ' over-limit' : '';
+          const wargearLabel = unit.wargear?.length
+            ? ` · ${unit.wargear.map((entry) => entry.item).join(', ')}`
+            : '';
+          const statsPreview = datasheet ? renderStatsPreviewHtml(datasheet) : '';
           return `
         <li class="army-row${unattached ? ' army-row-error' : ''}">
           <div class="army-row-main">
-            <span class="army-name">${escapeHtml(unit.name)}</span>
-            <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models · ${copies}/${max}${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
+            <button type="button" class="army-name-btn" data-datasheet-id="${unit.datasheetId}" data-roster-unit-id="${unit.id}">${escapeHtml(unit.name)}</button>
+            ${statsPreview}
+            <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models · ${copies}/${max}${wargearLabel}${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
           </div>
-          <span class="army-points${copyWarning}">${unit.points} pts</span>
+          <span class="army-points${copyWarning}">${unitTotalPoints(unit)} pts</span>
           ${unattached ? `<button type="button" class="btn small army-attach" data-unit-id="${unit.id}" title="Attach to bodyguard">Attach</button>` : ''}
           <button type="button" class="btn icon danger army-remove" data-unit-id="${unit.id}" title="Remove unit">×</button>
         </li>`;
@@ -275,7 +282,9 @@ function renderUnitPicker(
           return `
         <li class="picker-row${atLimit ? ' at-limit' : ''}">
           <div class="picker-main">
-            <span class="picker-name">${escapeHtml(sheet.name)} ${renderUnitBadges(sheet, roster, bodyguardIndex)}</span>
+            <button type="button" class="picker-name-btn" data-datasheet-id="${sheet.id}">${escapeHtml(sheet.name)}</button>
+            <span class="picker-badges">${renderUnitBadges(sheet, roster, bodyguardIndex)}</span>
+            ${renderStatsPreviewHtml(sheet)}
             <span class="picker-role">${escapeHtml(sheet.role ?? '')}${leaderHint ? ` · ${escapeHtml(leaderHint)}` : ''}${bodyguardHint ? ` · ${escapeHtml(bodyguardHint)}` : ''} · ${escapeHtml(copyLimitLabel(sheet))}</span>
           </div>
           <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}"${atLimit ? ' disabled title="Copy limit reached"' : ''}>Add</button>
@@ -528,11 +537,45 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
       const picker = root.querySelector('#unit-picker');
       if (picker) picker.innerHTML = renderUnitPicker(pack.datasheets, searchQuery, current, bodyguardIndex, sheets);
       bindPickerButtons();
+      bindUnitDetailButtons();
     });
 
     bindPickerButtons();
     bindCostPicker();
     bindAttachPicker();
+    bindUnitDetailButtons();
+  };
+
+  const bindUnitDetailButtons = () => {
+    for (const btn of root.querySelectorAll<HTMLButtonElement>('.army-name-btn, .picker-name-btn')) {
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const datasheetId = btn.dataset.datasheetId;
+        if (!datasheetId) return;
+        const datasheet = sheets.get(datasheetId);
+        if (!datasheet) return;
+
+        const rosterUnitId = btn.dataset.rosterUnitId;
+        const unit = rosterUnitId ? current.units.find((entry) => entry.id === rosterUnitId) : undefined;
+
+        openDatasheetModal(datasheet, {
+          mode: unit ? 'roster' : 'view',
+          unit,
+          onSaveWargear: async (wargear) => {
+            if (!unit) return;
+            current = {
+              ...current,
+              units: current.units.map((entry) =>
+                entry.id === unit.id ? applyUnitWargear(entry, wargear) : entry,
+              ),
+            };
+            current = await persistRoster(current, sheets);
+            showToast('Loadout saved.', 'success', 2500);
+            rerender();
+          },
+        });
+      });
+    }
   };
 
   const bindEnhancementForm = () => {

@@ -1,6 +1,6 @@
 {
-  "packVersion": "0.0.4",
-  "builtAt": "2026-06-30T17:04:23.301Z",
+  "packVersion": "0.0.5",
+  "builtAt": "2026-07-04T18:30:54.669Z",
   "attribution": {
     "wahapedia": "https://wahapedia.ru/",
     "mfm": "https://mfm.warhammer-community.com/"
@@ -11,13 +11,13 @@
       "lastUpdate": "2026-05-09 23:42:21",
       "hash": "638395a3342ca2c07cb4148ef327c73b7d5db68d02d48b72784dad889b0984e7",
       "files": {
-        "factions": {
-          "hash": "ae0f00b98dde9558ca32a3fd0caa8a43e572af6ebc6093ef7e13cdab2170308c",
-          "rowCount": 26
-        },
         "source": {
           "hash": "6f5339d4d2e9d7ee2cd3af82405d77b5093f3cc3a5d17536d306d8fb62f019e2",
           "rowCount": 72
+        },
+        "factions": {
+          "hash": "ae0f00b98dde9558ca32a3fd0caa8a43e572af6ebc6093ef7e13cdab2170308c",
+          "rowCount": 26
         },
         "datasheets-models": {
           "hash": "e6ce227496a992652b0b03cf511108d087b07cf1065a5c6384c001216c9e46bb",
@@ -26,10 +26,6 @@
         "datasheets-options": {
           "hash": "194deaa02c76670078347006bb7007f3057588866b07cb6dd3110cf84e66961d",
           "rowCount": 2831
-        },
-        "datasheets": {
-          "hash": "4f9a51e77709d737c7915bf34438c239dc46ca3cee81c36d0f1788c55a8250e2",
-          "rowCount": 1711
         },
         "datasheets-wargear": {
           "hash": "552dab0b3c8cffc91f2ab73e92045a14648587b1a4acf4e4ec75afca28843680",
@@ -43,9 +39,17 @@
           "hash": "ec6e9432835afc3ea731c69bd99864df0a29e3ef93fdde4b669feb6cc7d34ede",
           "rowCount": 2135
         },
+        "datasheets-abilities": {
+          "hash": "9855c6d5ac69b20f8c7b39a53e5eb877a6c2e7975ddf1f286f7216da756022b9",
+          "rowCount": 7153
+        },
         "datasheets-enhancements": {
           "hash": "14b20200a7ed14b670b9bd883d192ca857ee3d3597174db341494d8543bcfecc",
           "rowCount": 11583
+        },
+        "datasheets": {
+          "hash": "4f9a51e77709d737c7915bf34438c239dc46ca3cee81c36d0f1788c55a8250e2",
+          "rowCount": 1711
         },
         "datasheets-detachment-abilities": {
           "hash": "367636e9068e7f0ab5dc6113d8a12284c2f4c40af20a46e4c40fd3912e490236",
@@ -55,41 +59,37 @@
           "hash": "f78ae17f011420786b828e943d449262344ed196f3f9810e8d77b0e9c51883ea",
           "rowCount": 1918
         },
-        "stratagems": {
-          "hash": "69d6e7305820b7354181f99879c243c0d2be1e9c988ea32e75dae971468f43e9",
-          "rowCount": 1482
+        "datasheets-keywords": {
+          "hash": "a08db5773ef86a20371b6c384af28a980bcae9be202e6ceddca1df1c7e084a08",
+          "rowCount": 15868
         },
         "abilities": {
           "hash": "2d53801862ee9500e217bd3cca46272f732b69b22b3c9ff49ec6cd8cc1d4989c",
           "rowCount": 90
         },
-        "enhancements": {
-          "hash": "5d9f0314c97521885bae37c3a402c04d69aeb9ea122af0fef82bad46c2c52d03",
-          "rowCount": 927
-        },
-        "datasheets-stratagems": {
-          "hash": "6030cfca760a3ede634bc183da17d1c1fb9b587fdc83656dfe864db256c9d593",
-          "rowCount": 91089
-        },
-        "datasheets-keywords": {
-          "hash": "a08db5773ef86a20371b6c384af28a980bcae9be202e6ceddca1df1c7e084a08",
-          "rowCount": 15868
-        },
         "detachments": {
           "hash": "bf7d95b6d2f85e1350d2349c0479ad54f5f3e1c7ca3a00e45af022bc87024c82",
           "rowCount": 261
-        },
-        "last-update": {
-          "hash": "638395a3342ca2c07cb4148ef327c73b7d5db68d02d48b72784dad889b0984e7",
-          "rowCount": 1
         },
         "detachment-abilities": {
           "hash": "e9e0eb10a7aac8905e972e6e34176edd19e24656a00f8dc26687565dcdde5707",
           "rowCount": 284
         },
-        "datasheets-abilities": {
-          "hash": "9855c6d5ac69b20f8c7b39a53e5eb877a6c2e7975ddf1f286f7216da756022b9",
-          "rowCount": 7153
+        "last-update": {
+          "hash": "638395a3342ca2c07cb4148ef327c73b7d5db68d02d48b72784dad889b0984e7",
+          "rowCount": 1
+        },
+        "enhancements": {
+          "hash": "5d9f0314c97521885bae37c3a402c04d69aeb9ea122af0fef82bad46c2c52d03",
+          "rowCount": 927
+        },
+        "stratagems": {
+          "hash": "69d6e7305820b7354181f99879c243c0d2be1e9c988ea32e75dae971468f43e9",
+          "rowCount": 1482
+        },
+        "datasheets-stratagems": {
+          "hash": "6030cfca760a3ede634bc183da17d1c1fb9b587fdc83656dfe864db256c9d593",
+          "rowCount": 91089
         }
       }
     },
