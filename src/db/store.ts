@@ -51,6 +51,11 @@ export async function getCachedFaction(id: string): Promise<FactionPack | null> 
   return row?.pack ?? null;
 }
 
+export async function listCachedFactionIds(): Promise<string[]> {
+  const db = await getDb();
+  return db.getAllKeys('factions');
+}
+
 export async function cacheMeta(key: string, value: unknown): Promise<void> {
   const db = await getDb();
   await db.put('meta', value, key);

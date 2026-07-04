@@ -1,20 +1,7 @@
 import { loadFactionIndex, loadFactionPack, loadManifest, getUnitPoints, isOfflineDataError } from '../data/loader';
 import { escapeHtml } from '../util/html';
 import { navigate } from '../router';
-
-function renderOfflineError(root: HTMLElement, title: string, message: string, backLabel = '← Factions') {
-  root.innerHTML = `
-    <section class="panel">
-      <header class="panel-header">
-        <button type="button" class="back" id="back-btn">${escapeHtml(backLabel)}</button>
-        <h2>${escapeHtml(title)}</h2>
-      </header>
-      <p class="error">${escapeHtml(message)}</p>
-      <p class="muted offline-tip">While online: open <strong>Factions</strong>, then open each army you need. Rosters you already created stay available offline.</p>
-    </section>
-  `;
-  root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/'));
-}
+import { renderOfflineError } from '../util/offline-ui';
 
 export async function renderFactionList(root: HTMLElement) {
   root.innerHTML = '<p class="loading">Loading factions…</p>';
@@ -23,14 +10,17 @@ export async function renderFactionList(root: HTMLElement) {
     const [manifest, factions] = await Promise.all([loadManifest(), loadFactionIndex()]);
     factions.sort((a, b) => a.name.localeCompare(b.name));
 
-  root.innerHTML = `
+    root.innerHTML = `
     <section class="panel">
       <header class="panel-header">
         <div>
           <h2>Factions</h2>
           <p class="muted">Data pack v${manifest.packVersion} · ${manifest.wahapedia.datasheetCount} datasheets</p>
         </div>
-        <input type="search" id="faction-search" placeholder="Search factions…" class="search" />
+        <div class="header-actions">
+          <button type="button" class="btn ghost" id="offline-prep-btn">Prepare offline</button>
+          <input type="search" id="faction-search" placeholder="Search factions…" class="search" />
+        </div>
       </header>
       <ul class="faction-grid" id="faction-list">
         ${factions
@@ -53,27 +43,26 @@ export async function renderFactionList(root: HTMLElement) {
     </section>
   `;
 
-  const search = root.querySelector<HTMLInputElement>('#faction-search');
-  const list = root.querySelector<HTMLUListElement>('#faction-list');
-  const cards = () => [...root.querySelectorAll<HTMLButtonElement>('.faction-card')];
+    const search = root.querySelector<HTMLInputElement>('#faction-search');
+    const cards = () => [...root.querySelectorAll<HTMLButtonElement>('.faction-card')];
 
-  search?.addEventListener('input', () => {
-    const query = search.value.trim().toLowerCase();
-    for (const card of cards()) {
-      const name = card.querySelector('.faction-name')?.textContent?.toLowerCase() ?? '';
-      card.closest('li')!.hidden = query.length > 0 && !name.includes(query);
-    }
-  });
-
-  for (const card of cards()) {
-    card.addEventListener('click', () => {
-      navigate(`/faction/${card.dataset.id}`);
+    search?.addEventListener('input', () => {
+      const query = search.value.trim().toLowerCase();
+      for (const card of cards()) {
+        const name = card.querySelector('.faction-name')?.textContent?.toLowerCase() ?? '';
+        card.closest('li')!.hidden = query.length > 0 && !name.includes(query);
+      }
     });
-  }
+
+    for (const card of cards()) {
+      card.addEventListener('click', () => {
+        navigate(`/faction/${card.dataset.id}`);
+      });
+    }
+
+    root.querySelector('#offline-prep-btn')?.addEventListener('click', () => navigate('/offline-prep'));
   } catch (error) {
-    const message = isOfflineDataError(error)
-      ? error.message
-      : 'Could not load factions.';
+    const message = isOfflineDataError(error) ? error.message : 'Could not load factions.';
     renderOfflineError(root, 'Offline', message);
   }
 }
@@ -90,11 +79,11 @@ export async function renderFactionDetail(root: HTMLElement, factionId: string) 
     }
 
     const pack = await loadFactionPack(entry.id, entry.path);
-  const withPoints = pack.datasheets.filter((d) => getUnitPoints(d) !== null).length;
+    const withPoints = pack.datasheets.filter((d) => getUnitPoints(d) !== null).length;
 
-  pack.datasheets.sort((a, b) => a.name.localeCompare(b.name));
+    pack.datasheets.sort((a, b) => a.name.localeCompare(b.name));
 
-  root.innerHTML = `
+    root.innerHTML = `
     <section class="panel">
       <header class="panel-header">
         <button type="button" class="back" id="back-btn">← Factions</button>
@@ -120,12 +109,10 @@ export async function renderFactionDetail(root: HTMLElement, factionId: string) 
     </section>
   `;
 
-  root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/'));
-  root.querySelector('#build-roster-btn')?.addEventListener('click', () => navigate(`/roster/new/${factionId}`));
+    root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/'));
+    root.querySelector('#build-roster-btn')?.addEventListener('click', () => navigate(`/roster/new/${factionId}`));
   } catch (error) {
-    const message = isOfflineDataError(error)
-      ? error.message
-      : 'Could not load this faction.';
+    const message = isOfflineDataError(error) ? error.message : 'Could not load this faction.';
     renderOfflineError(root, 'Offline', message);
   }
 }
