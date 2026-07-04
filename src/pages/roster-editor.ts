@@ -45,6 +45,7 @@ import {
   rosterGrandTotal,
 } from '../roster/points';
 import { escapeHtml } from '../util/html';
+import { showToast } from '../util/notify';
 import { navigate } from '../router';
 import type { CostOption, Datasheet, FactionPack, Roster, RosterUnit } from '../types';
 
@@ -409,7 +410,15 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
     const ensureLegalForExport = (): boolean => {
       if (isRosterLegal(current, sheets)) return true;
       const errors = getRosterErrors(current, sheets);
-      alert(`Fix rule errors before exporting:\n\n${errors.map((e) => `• ${e.message}`).join('\n')}`);
+      showToast(
+        `Fix ${errors.length} rule error${errors.length === 1 ? '' : 's'} before exporting — see Rules check.`,
+        'error',
+        5000,
+      );
+      const section = root.querySelector('.validation-section');
+      section?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      section?.classList.add('flash-highlight');
+      window.setTimeout(() => section?.classList.remove('flash-highlight'), 1600);
       return false;
     };
 
@@ -571,7 +580,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
   const addUnit = async (datasheet: Datasheet, cost: CostOption, tierLabel: string) => {
     const check = canAddUnitCopy(current, datasheet);
     if (!check.ok) {
-      alert(check.message);
+      showToast(check.message, 'error');
       return;
     }
 
@@ -600,7 +609,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
 
         const check = canAddUnitCopy(current, datasheet);
         if (!check.ok) {
-          alert(check.message);
+          showToast(check.message, 'error');
           return;
         }
 
