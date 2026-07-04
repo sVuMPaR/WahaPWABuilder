@@ -1,11 +1,16 @@
+import { unitLoadoutSummary } from '../datasheet/loadout';
 import { unitTotalPoints } from '../datasheet/wargear';
 import { enhancementTotalPoints } from './enhancements';
 import { getAttachedUnitName } from './leaders';
 import { rosterUnitsPoints } from './points';
-import type { Roster } from '../types';
+import type { Datasheet, Roster } from '../types';
 import type { ValidationIssue } from './validation';
 
-export function formatRosterAsText(roster: Roster, validationIssues?: ValidationIssue[]): string {
+export function formatRosterAsText(
+  roster: Roster,
+  validationIssues?: ValidationIssue[],
+  datasheets?: Map<string, Datasheet>,
+): string {
   const lines: string[] = [];
   const unitPoints = rosterUnitsPoints(roster);
   const enhancementPoints = enhancementTotalPoints(roster);
@@ -32,9 +37,12 @@ export function formatRosterAsText(roster: Roster, validationIssues?: Validation
       const models = unit.models === 1 ? '1 model' : `${unit.models} models`;
       const attached = getAttachedUnitName(roster, unit);
       const attachment = attached ? ` → ${attached}` : '';
-      const wargear =
-        unit.wargear?.length ? ` · ${unit.wargear.map((entry) => entry.item).join(', ')}` : '';
-      lines.push(`  - ${unit.name} (${models}, ${unitTotalPoints(unit)} pts)${wargear}${attachment}`);
+      const datasheet = datasheets?.get(unit.datasheetId);
+      const loadout = datasheet
+        ? unitLoadoutSummary(unit, datasheet)
+        : unit.wargear?.map((entry) => entry.item).join(', ') ?? '';
+      const loadoutSuffix = loadout ? ` · ${loadout}` : '';
+      lines.push(`  - ${unit.name} (${models}, ${unitTotalPoints(unit)} pts)${loadoutSuffix}${attachment}`);
     }
   }
 
@@ -56,20 +64,22 @@ export function formatRosterAsText(roster: Roster, validationIssues?: Validation
 export async function copyRosterToClipboard(
   roster: Roster,
   validationIssues?: ValidationIssue[],
+  datasheets?: Map<string, Datasheet>,
 ): Promise<void> {
-  const text = formatRosterAsText(roster, validationIssues);
+  const text = formatRosterAsText(roster, validationIssues, datasheets);
   await navigator.clipboard.writeText(text);
 }
 
 export async function shareRoster(
   roster: Roster,
   validationIssues?: ValidationIssue[],
+  datasheets?: Map<string, Datasheet>,
 ): Promise<boolean> {
-  const text = formatRosterAsText(roster, validationIssues);
+  const text = formatRosterAsText(roster, validationIssues, datasheets);
   if (navigator.share) {
     await navigator.share({ title: roster.name, text });
     return true;
   }
-  await copyRosterToClipboard(roster);
+  await copyRosterToClipboard(roster, validationIssues, datasheets);
   return false;
 }

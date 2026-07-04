@@ -1,5 +1,6 @@
 import { renderStatsPreviewHtml, openDatasheetModal } from '../datasheet/modal';
-import { applyUnitWargear, unitTotalPoints } from '../datasheet/wargear';
+import { applyUnitLoadout, unitLoadoutSummary } from '../datasheet/loadout';
+import { unitTotalPoints } from '../datasheet/wargear';
 import { loadFactionIndex, loadFactionPack, isOfflineDataError } from '../data/loader';
 import { getRoster, saveRoster } from '../db/store';
 import {
@@ -213,16 +214,17 @@ function renderArmyList(roster: Roster, sheets: Map<string, Datasheet>): string 
           const copies = countDatasheetCopies(roster, unit.datasheetId);
           const max = datasheet ? maxUnitCopies(datasheet) : 3;
           const copyWarning = copies > max ? ' over-limit' : '';
-          const wargearLabel = unit.wargear?.length
-            ? ` · ${unit.wargear.map((entry) => entry.item).join(', ')}`
-            : '';
+          const loadoutLabel = datasheet
+            ? unitLoadoutSummary(unit, datasheet)
+            : unit.wargear?.map((entry) => entry.item).join(', ') ?? '';
+          const loadoutPart = loadoutLabel ? ` · ${escapeHtml(loadoutLabel)}` : '';
           const statsPreview = datasheet ? renderStatsPreviewHtml(datasheet) : '';
           return `
         <li class="army-row${unattached ? ' army-row-error' : ''}">
           <div class="army-row-main">
             <button type="button" class="army-name-btn" data-datasheet-id="${unit.datasheetId}" data-roster-unit-id="${unit.id}">${escapeHtml(unit.name)}</button>
             ${statsPreview}
-            <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models · ${copies}/${max}${wargearLabel}${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
+            <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models · ${copies}/${max}${loadoutPart}${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
           </div>
           <span class="army-points${copyWarning}">${unitTotalPoints(unit)} pts</span>
           ${unattached ? `<button type="button" class="btn small army-attach" data-unit-id="${unit.id}" title="Attach to bodyguard">Attach</button>` : ''}
@@ -434,7 +436,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
     root.querySelector('#copy-roster-btn')?.addEventListener('click', async () => {
       if (!ensureLegalForExport()) return;
       const issues = getRosterValidationIssues(current, sheets);
-      await copyRosterToClipboard(current, issues);
+      await copyRosterToClipboard(current, issues, sheets);
       const btn = root.querySelector<HTMLButtonElement>('#copy-roster-btn');
       if (btn) {
         const original = btn.textContent;
@@ -448,7 +450,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
     root.querySelector('#share-roster-btn')?.addEventListener('click', async () => {
       if (!ensureLegalForExport()) return;
       const issues = getRosterValidationIssues(current, sheets);
-      const shared = await shareRoster(current, issues);
+      const shared = await shareRoster(current, issues, sheets);
       if (!shared) {
         const btn = root.querySelector<HTMLButtonElement>('#share-roster-btn');
         if (btn) {
@@ -561,12 +563,12 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
         openDatasheetModal(datasheet, {
           mode: unit ? 'roster' : 'view',
           unit,
-          onSaveWargear: async (wargear) => {
+          onSaveLoadout: async ({ selections, wargear: extraWargear }) => {
             if (!unit) return;
             current = {
               ...current,
               units: current.units.map((entry) =>
-                entry.id === unit.id ? applyUnitWargear(entry, wargear) : entry,
+                entry.id === unit.id ? applyUnitLoadout(entry, datasheet, selections, extraWargear) : entry,
               ),
             };
             current = await persistRoster(current, sheets);
