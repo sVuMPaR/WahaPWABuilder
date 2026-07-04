@@ -66,3 +66,14 @@
 ## Для разработчиков
 
 Ручной чеклист и автотесты: [TESTING.md](TESTING.md)
+
+### Ветки и деплой
+
+| Ветка | CI (build + test) | GitHub Pages |
+|-------|-------------------|--------------|
+| `feature` | ✅ при push | ✅ автодеплой при push |
+| `main` | ✅ при push | ❌ только вручную (Actions → Deploy PWA → Run workflow → `main`) |
+
+**Workflow:** разработка и тесты на `feature` → когда всё ок, merge в `main` → при необходимости ручной деплой production с `main`.
+
+Live URL один: [https://svumpar.github.io/WahaPWABuilder/](https://svumpar.github.io/WahaPWABuilder/) — показывает последний успешный деплoy (обычно с `feature`).

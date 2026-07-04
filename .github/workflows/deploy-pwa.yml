@@ -2,8 +2,17 @@ name: Deploy PWA
 
 on:
   push:
-    branches: [main]
+    branches: [feature]
   workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Branch to build and deploy
+        required: true
+        default: feature
+        type: choice
+        options:
+          - feature
+          - main
 
 permissions:
   contents: read
@@ -19,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.target_branch || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -37,6 +48,7 @@ jobs:
           touch dist/.nojekyll
           find dist -type d -exec chmod 755 {} \;
           find dist -type f -exec chmod 644 {} \;
+          echo "Deploying branch: ${{ github.event_name == 'workflow_dispatch' && inputs.target_branch || github.ref_name }}"
           echo "Artifact size:"
           du -sh dist
           find dist -type f | wc -l
@@ -69,5 +81,5 @@ jobs:
       - name: Verify deployment succeeded
         if: steps.deployment.outcome == 'failure' && steps.deployment-retry.outcome == 'failure'
         run: |
-          echo "::error::GitHub Pages deploy failed twice. Often this is a transient GitHub issue — re-run the deploy job or the whole workflow from Actions."
+          echo "::error::GitHub Pages deploy failed twice. Re-run the deploy job from Actions."
           exit 1
