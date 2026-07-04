@@ -32,7 +32,16 @@ jobs:
           VITE_BASE: /${{ github.event.repository.name }}/
         run: npm run build
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Prepare Pages artifact
+        run: |
+          touch dist/.nojekyll
+          find dist -type d -exec chmod 755 {} \;
+          find dist -type f -exec chmod 644 {} \;
+          echo "Artifact size:"
+          du -sh dist
+          find dist -type f | wc -l
+
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
@@ -43,5 +52,22 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Wait before retry
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 45
+
+      - name: Retry deploy (transient Pages failures)
+        id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+
+      - name: Verify deployment succeeded
+        if: steps.deployment.outcome == 'failure' && steps.deployment-retry.outcome == 'failure'
+        run: |
+          echo "::error::GitHub Pages deploy failed twice. Often this is a transient GitHub issue — re-run the deploy job or the whole workflow from Actions."
+          exit 1
