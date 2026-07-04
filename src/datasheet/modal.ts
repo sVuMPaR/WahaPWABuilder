@@ -1,14 +1,21 @@
 import { escapeHtml } from '../util/html';
+import {
+  getDefaultLoadoutSelections,
+  getStandaloneMfmOptions,
+  getUnparsedOptions,
+  parseDatasheetLoadout,
+} from './loadout-parser';
+import { splitUnitWargear } from './loadout';
 import { formatStatsPreview, formatStatsRow, getPrimaryProfile, hasUnitStats } from './stats';
-import { getMfmWargearOptions, getUnitWargear, unitTotalPoints } from './wargear';
-import type { Datasheet, RosterUnit } from '../types';
+import { unitTotalPoints } from './wargear';
+import type { Datasheet, LoadoutSelection, MfmWargearOption, ParsedLoadoutGroup, RosterUnit } from '../types';
 
 export type DatasheetModalMode = 'view' | 'roster';
 
 export interface DatasheetModalContext {
   mode: DatasheetModalMode;
   unit?: RosterUnit;
-  onSaveWargear?: (wargear: ReturnType<typeof getUnitWargear>) => void;
+  onSaveLoadout?: (payload: { selections: LoadoutSelection[]; wargear: MfmWargearOption[] }) => void;
 }
 
 let modalHost: HTMLElement | null = null;
@@ -81,41 +88,130 @@ function renderProfileTable(datasheet: Datasheet): string {
     </table>`;
 }
 
-function renderWargearSection(datasheet: Datasheet, context: DatasheetModalContext): string {
-  const mfmOptions = getMfmWargearOptions(datasheet);
-  const selected = context.unit ? getUnitWargear(context.unit) : [];
-  const selectedItems = new Set(selected.map((item) => item.item));
+function renderLoadoutGroup(
+  group: ParsedLoadoutGroup,
+  selectedChoiceId: string | null,
+  interactive: boolean,
+): string {
+  const pointsLabel = (points: number) => (points > 0 ? `<span class="wargear-points">+${points} pts</span>` : '');
 
-  const mfmBlock =
-    mfmOptions.length === 0
+  if (group.type === 'exclusive') {
+    const choices = interactive
+      ? `
+      <label class="loadout-choice">
+        <input type="radio" name="loadout-${group.id}" value=""${selectedChoiceId === null ? ' checked' : ''} />
+        <span>Stock loadout</span>
+      </label>
+      ${group.choices
+        .map(
+          (choice) => `
+      <label class="loadout-choice">
+        <input type="radio" name="loadout-${group.id}" value="${escapeHtml(choice.id)}"${selectedChoiceId === choice.id ? ' checked' : ''} />
+        <span>${escapeHtml(choice.label)}</span>
+        ${pointsLabel(choice.points)}
+      </label>`,
+        )
+        .join('')}`
+      : `<ul class="modal-list">${group.choices.map((choice) => `<li>${escapeHtml(choice.label)} ${pointsLabel(choice.points)}</li>`).join('')}</ul>`;
+
+    return `
+      <div class="loadout-group">
+        <p class="loadout-group-label">${escapeHtml(group.label)}</p>
+        <div class="loadout-choices">${choices}</div>
+      </div>`;
+  }
+
+  const choices = group.choices
+    .map((choice) => {
+      if (interactive) {
+        return `
+      <label class="loadout-choice">
+        <input type="checkbox" class="loadout-checkbox" data-group-id="${escapeHtml(group.id)}" data-choice-id="${escapeHtml(choice.id)}"${selectedChoiceId === choice.id ? ' checked' : ''} />
+        <span>${escapeHtml(choice.label)}</span>
+        ${pointsLabel(choice.points)}
+      </label>`;
+      }
+      return `<li>${escapeHtml(choice.label)} ${pointsLabel(choice.points)}</li>`;
+    })
+    .join('');
+
+  return `
+    <div class="loadout-group">
+      <p class="loadout-group-label">${escapeHtml(group.label)}</p>
+      ${interactive ? `<div class="loadout-choices">${choices}</div>` : `<ul class="modal-list">${choices}</ul>`}
+    </div>`;
+}
+
+function renderWargearSection(datasheet: Datasheet, context: DatasheetModalContext): string {
+  const groups = parseDatasheetLoadout(datasheet);
+  const unparsed = getUnparsedOptions(datasheet);
+  const standaloneMfm = getStandaloneMfmOptions(datasheet, groups);
+  const interactive = context.mode === 'roster' && Boolean(context.unit);
+
+  const { selections, extraWargear } =
+    context.unit && interactive
+      ? splitUnitWargear(context.unit, datasheet)
+      : { selections: getDefaultLoadoutSelections(groups), extraWargear: [] };
+
+  const selectionMap = new Map(selections.map((entry) => [entry.groupId, entry.choiceId]));
+  const extraItems = new Set(extraWargear.map((entry) => entry.item));
+
+  const loadoutBuilder =
+    groups.length === 0
       ? ''
       : `
     <section class="modal-section">
-      <h4 class="modal-section-title">MFM wargear upgrades</h4>
+      <h4 class="modal-section-title">Loadout builder</h4>
       ${
-        context.mode === 'roster' && context.unit
-          ? `<p class="muted modal-hint">Select upgrades — points are added to this unit.</p>
-        <ul class="wargear-select-list">
-          ${mfmOptions
+        interactive
+          ? '<p class="muted modal-hint">Parsed from Wahapedia options — MFM points applied automatically where available.</p>'
+          : ''
+      }
+      ${groups
+        .map((group) => renderLoadoutGroup(group, selectionMap.get(group.id) ?? null, interactive))
+        .join('')}
+    </section>`;
+
+  const standaloneBlock =
+    standaloneMfm.length === 0
+      ? ''
+      : `
+    <section class="modal-section">
+      <h4 class="modal-section-title">Additional MFM upgrades</h4>
+      ${
+        interactive
+          ? `<ul class="wargear-select-list">
+          ${standaloneMfm
             .map(
               (option) => `
             <li>
               <label class="wargear-select-label">
-                <input type="checkbox" class="wargear-select" data-item="${escapeHtml(option.item)}" data-points="${option.points}"${selectedItems.has(option.item) ? ' checked' : ''} />
+                <input type="checkbox" class="wargear-select" data-item="${escapeHtml(option.item)}" data-points="${option.points}"${extraItems.has(option.item) ? ' checked' : ''} />
                 <span>${escapeHtml(option.item)}</span>
                 <span class="wargear-points">+${option.points} pts</span>
               </label>
             </li>`,
             )
             .join('')}
-        </ul>
-        <div class="form-actions">
-          <button type="button" class="btn primary small" id="save-wargear-btn">Save loadout</button>
-        </div>`
-          : `<ul class="modal-list">
-          ${mfmOptions.map((option) => `<li>${escapeHtml(option.item)} <span class="muted">+${option.points} pts</span></li>`).join('')}
         </ul>`
+          : `<ul class="modal-list">${standaloneMfm.map((option) => `<li>${escapeHtml(option.item)} <span class="muted">+${option.points} pts</span></li>`).join('')}</ul>`
       }
+    </section>`;
+
+  const saveBlock =
+    interactive && (groups.length > 0 || standaloneMfm.length > 0)
+      ? `<div class="form-actions"><button type="button" class="btn primary small" id="save-loadout-btn">Save loadout</button></div>`
+      : '';
+
+  const unparsedBlock =
+    unparsed.length === 0
+      ? ''
+      : `
+    <section class="modal-section">
+      <h4 class="modal-section-title">Other options (text)</h4>
+      <ul class="modal-list options-list">
+        ${unparsed.map((option) => `<li>${escapeHtml(option)}</li>`).join('')}
+      </ul>
     </section>`;
 
   const weapons = datasheet.wargear ?? [];
@@ -131,19 +227,7 @@ function renderWargearSection(datasheet: Datasheet, context: DatasheetModalConte
       </table>
     </section>`;
 
-  const options = datasheet.options ?? [];
-  const optionsBlock =
-    options.length === 0
-      ? ''
-      : `
-    <section class="modal-section">
-      <h4 class="modal-section-title">Wargear options</h4>
-      <ul class="modal-list options-list">
-        ${options.map((option) => `<li>${escapeHtml(option.description)}</li>`).join('')}
-      </ul>
-    </section>`;
-
-  return `${mfmBlock}${weaponsBlock}${optionsBlock}`;
+  return `${loadoutBuilder}${standaloneBlock}${saveBlock}${unparsedBlock}${weaponsBlock}`;
 }
 
 export function renderStatsPreviewHtml(datasheet: Datasheet): string {
@@ -230,15 +314,30 @@ export function openDatasheetModal(datasheet: Datasheet, context: DatasheetModal
     { once: true },
   );
 
-  const saveBtn = modalHost.querySelector<HTMLButtonElement>('#save-wargear-btn');
+  const saveBtn = modalHost.querySelector<HTMLButtonElement>('#save-loadout-btn');
   saveBtn?.addEventListener('click', () => {
-    const selected = [...modalHost!.querySelectorAll<HTMLInputElement>('.wargear-select:checked')].map(
+    const groups = parseDatasheetLoadout(datasheet);
+    const selections: LoadoutSelection[] = groups.map((group) => {
+      if (group.type === 'exclusive') {
+        const selected = modalHost!.querySelector<HTMLInputElement>(`input[name="loadout-${group.id}"]:checked`);
+        const choiceId = selected?.value ? selected.value : null;
+        return { groupId: group.id, choiceId };
+      }
+
+      const checked = modalHost!.querySelector<HTMLInputElement>(
+        `.loadout-checkbox[data-group-id="${group.id}"]:checked`,
+      );
+      return { groupId: group.id, choiceId: checked?.dataset.choiceId ?? null };
+    });
+
+    const extraWargear = [...modalHost!.querySelectorAll<HTMLInputElement>('.wargear-select:checked')].map(
       (input) => ({
         item: input.dataset.item ?? '',
         points: Number(input.dataset.points ?? 0),
       }),
     );
-    context.onSaveWargear?.(selected);
+
+    context.onSaveLoadout?.({ selections, wargear: extraWargear });
     closeModal();
   });
 }

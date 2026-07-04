@@ -98,6 +98,30 @@ export interface DatasheetWargearOption {
   description: string;
 }
 
+export type LoadoutGroupType = 'optional' | 'exclusive' | 'per-model';
+
+export interface ParsedLoadoutChoice {
+  id: string;
+  label: string;
+  items: string[];
+  points: number;
+  mfmItem?: string;
+}
+
+export interface ParsedLoadoutGroup {
+  id: string;
+  type: LoadoutGroupType;
+  label: string;
+  rawText: string;
+  replaces?: string;
+  choices: ParsedLoadoutChoice[];
+}
+
+export interface LoadoutSelection {
+  groupId: string;
+  choiceId: string | null;
+}
+
 export interface Enhancement {
   id: string;
   name: string;
@@ -181,6 +205,7 @@ export interface RosterUnit {
   /** Base MFM cost before wargear upgrades. */
   basePoints?: number;
   wargear?: MfmWargearOption[];
+  loadoutSelections?: LoadoutSelection[];
   tierLabel: string;
   copyIndex: number;
   mfmRole?: 'leader' | 'support';
