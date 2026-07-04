@@ -405,6 +405,42 @@ body.modal-open {
   flex: 1;
 }
 
+.loadout-choice-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.loadout-choice-disabled input {
+  cursor: not-allowed;
+}
+
+.loadout-validation-panel {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+
+.loadout-validation-list {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.loadout-validation-item.error {
+  color: #f8a5ae;
+}
+
+.loadout-validation-item.warning {
+  color: #ffd89b;
+}
+
+.loadout-validation-ok {
+  margin: 0;
+}
+
 .wargear-select-label {
   display: flex;
   align-items: center;

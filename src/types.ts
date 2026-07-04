@@ -98,7 +98,7 @@ export interface DatasheetWargearOption {
   description: string;
 }
 
-export type LoadoutGroupType = 'optional' | 'exclusive' | 'per-model';
+export type LoadoutGroupType = 'optional' | 'exclusive' | 'per-model' | 'ratio-optional' | 'note';
 
 export interface ParsedLoadoutChoice {
   id: string;
@@ -114,7 +114,19 @@ export interface ParsedLoadoutGroup {
   label: string;
   rawText: string;
   replaces?: string;
+  /** Items that must be absent from the effective loadout (conditional options). */
+  requiresAbsent?: string[];
+  /** Max models that can take this option (from "Up to N…"). */
+  maxModels?: number;
+  /** For ratio options: 1 token per N models. */
+  ratioPerModels?: number;
   choices: ParsedLoadoutChoice[];
+}
+
+export interface LoadoutValidationIssue {
+  severity: 'error' | 'warning';
+  message: string;
+  groupId?: string;
 }
 
 export interface LoadoutSelection {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getParseCoverageStats,
   parseDatasheetLoadout,
   parseDefaultLoadoutItems,
   parseOptionDescription,
@@ -63,6 +64,62 @@ describe('parseOptionDescription', () => {
     expect(group?.choices).toHaveLength(2);
     expect(group?.choices[0].label).toBe('heavy bolt pistol + power fist');
   });
+
+  it('parses counted optional wargear', () => {
+    const group = parseOptionDescription('This model can be equipped with 3 hunter-killer missiles.', 0);
+    expect(group?.type).toBe('optional');
+    expect(group?.label).toMatch(/3×/);
+  });
+
+  it('parses per-model equip add-on', () => {
+    const group = parseOptionDescription('Any number of models can each be equipped with 1 hunter-killer missile.', 0);
+    expect(group?.type).toBe('per-model');
+    expect(group?.choices[0].label).toBe('hunter-killer missile');
+  });
+
+  it('parses paired weapon replacement', () => {
+    const group = parseOptionDescription(
+      'This model’s 2 twin heavy flamers can be replaced with 2 twin heavy bolters.',
+      0,
+    );
+    expect(group?.type).toBe('exclusive');
+    expect(group?.replaces).toBe('twin heavy flamers');
+    expect(group?.choices[0].label).toBe('twin heavy bolters');
+  });
+
+  it('parses ratio per-model replacement', () => {
+    const group = parseOptionDescription(
+      'For every 5 models in this unit, up to 2 Plague Marines can each have their boltgun replaced with 1 plasma gun.',
+      0,
+    );
+    expect(group?.type).toBe('per-model');
+    expect(group?.maxModels).toBe(2);
+  });
+
+  it('parses conditional unit-size option', () => {
+    const group = parseOptionDescription(
+      'If this unit contains 10 models, 1 Corsair Voidscarred’s shuriken rifle can be replaced with 1 fusion gun.',
+      0,
+    );
+    expect(group?.type).toBe('per-model');
+    expect(group?.maxModels).toBe(1);
+  });
+
+  it('parses up-to list with duplicates', () => {
+    const group = parseOptionDescription(
+      'This model can be equipped with up to two of the following, and can take duplicates:1 gun drone 1 marker drone',
+      0,
+    );
+    expect(group?.type).toBe('optional');
+    expect(group?.maxModels).toBe(2);
+    expect(group?.choices.length).toBeGreaterThan(1);
+  });
+
+  it('skips notes and asterisk lines', () => {
+    expect(parseOptionDescription('* This unit can only take one of these options.', 0)).toBeNull();
+    expect(parseOptionDescription('None', 0)).toBeNull();
+    expect(parseOptionDescription('If this unit contains a Captain, it cannot take this wargear.', 0)).toBeNull();
+  });
 });
 
 describe('wargearFromSelections', () => {
@@ -82,5 +139,20 @@ describe('wargearFromSelections', () => {
     const groups = parseDatasheetLoadout(datasheet);
     const wargear = wargearFromSelections(datasheet, groups, [{ groupId: groups[0].id, choiceId: groups[0].choices[0].id }]);
     expect(wargear).toEqual([{ item: 'Macro plasma incinerator', points: 10 }]);
+  });
+});
+
+describe('getParseCoverageStats', () => {
+  it('reports parsed option count', () => {
+    const datasheet: Datasheet = {
+      id: '1',
+      name: 'Test',
+      options: [
+        { description: 'This model can be equipped with 1 Plasmagun.' },
+        { description: '* designer note' },
+        { description: 'None' },
+      ],
+    };
+    expect(getParseCoverageStats(datasheet)).toEqual({ parsed: 1, total: 3 });
   });
 });
