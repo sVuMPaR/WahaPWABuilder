@@ -1,3 +1,4 @@
+import { renderStatsPreviewHtml, openDatasheetModal } from '../datasheet/modal';
 import { loadFactionIndex, loadFactionPack, loadManifest, getUnitPoints, isOfflineDataError } from '../data/loader';
 import { escapeHtml } from '../util/html';
 import { navigate } from '../router';
@@ -99,8 +100,11 @@ export async function renderFactionDetail(root: HTMLElement, factionId: string) 
             const points = getUnitPoints(sheet);
             return `
           <li class="datasheet-row">
-            <span class="datasheet-name">${sheet.name}</span>
-            <span class="datasheet-role">${sheet.role ?? ''}</span>
+            <div class="datasheet-main">
+              <button type="button" class="datasheet-name-btn" data-datasheet-id="${sheet.id}">${escapeHtml(sheet.name)}</button>
+              ${renderStatsPreviewHtml(sheet)}
+            </div>
+            <span class="datasheet-role">${escapeHtml(sheet.role ?? '')}</span>
             <span class="datasheet-points">${points !== null ? `${points} pts` : '—'}</span>
           </li>`;
           })
@@ -111,6 +115,14 @@ export async function renderFactionDetail(root: HTMLElement, factionId: string) 
 
     root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/'));
     root.querySelector('#build-roster-btn')?.addEventListener('click', () => navigate(`/roster/new/${factionId}`));
+
+    const sheets = new Map(pack.datasheets.map((sheet) => [sheet.id, sheet]));
+    for (const btn of root.querySelectorAll<HTMLButtonElement>('.datasheet-name-btn')) {
+      btn.addEventListener('click', () => {
+        const sheet = sheets.get(btn.dataset.datasheetId ?? '');
+        if (sheet) openDatasheetModal(sheet, { mode: 'view' });
+      });
+    }
   } catch (error) {
     const message = isOfflineDataError(error) ? error.message : 'Could not load this faction.';
     renderOfflineError(root, 'Offline', message);

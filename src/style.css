@@ -184,6 +184,228 @@ a {
   font-size: 0.92rem;
 }
 
+.datasheet-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.datasheet-name-btn,
+.army-name-btn,
+.picker-name-btn {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.datasheet-name-btn:hover,
+.army-name-btn:hover,
+.picker-name-btn:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.stats-preview,
+.stats-preview-line {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.picker-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.datasheet-modal-host {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+.datasheet-modal-host[hidden] {
+  display: none !important;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 720px);
+  max-height: min(92dvh, 900px);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.modal-subtitle,
+.modal-profile-name {
+  margin: 0.25rem 0 0;
+}
+
+.modal-body {
+  padding: 0.75rem 1rem 1.25rem;
+}
+
+.modal-section + .modal-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.modal-section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.modal-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.modal-text.lore {
+  color: var(--muted);
+}
+
+.modal-hint,
+.modal-empty {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.modal-list,
+.ability-list,
+.wargear-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.modal-list li,
+.ability-list li,
+.wargear-select-list li {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+
+.modal-list li:last-child,
+.ability-list li:last-child,
+.wargear-select-list li:last-child {
+  border-bottom: none;
+}
+
+.options-list li {
+  line-height: 1.4;
+}
+
+.stats-table,
+.weapon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.stats-table th,
+.stats-table td,
+.weapon-table th,
+.weapon-table td {
+  padding: 0.4rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.stats-table th,
+.weapon-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.inv-save {
+  color: var(--accent);
+}
+
+.weapon-stats {
+  color: var(--muted);
+}
+
+.wargear-select-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.wargear-select-label span:first-of-type {
+  flex: 1;
+}
+
+.wargear-points {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .datasheet-modal-host {
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .modal-panel {
+    border-radius: var(--radius);
+    max-height: min(88dvh, 900px);
+  }
+}
+
 .datasheet-role {
   color: var(--muted);
   font-size: 0.8rem;

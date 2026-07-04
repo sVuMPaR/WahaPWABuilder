@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Strip heavy datasheet fields from oversized faction packs (e.g. Space Marines ~53MB).
- * Keeps roster-builder fields; full wargear/abilities remain in raw build if needed later.
+ * Keeps roster-builder + unit detail fields (stats, wargear, abilities).
  */
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -14,7 +14,12 @@ const DATASHEET_KEYS = [
   'name',
   'role',
   'legend',
+  'loadout',
   'keywords',
+  'models',
+  'wargear',
+  'options',
+  'abilities',
   'points',
   'enhancements',
   'leaderAttachments',
@@ -33,12 +38,65 @@ function slimEnhancement(enhancement) {
   };
 }
 
+function slimModel(model) {
+  return {
+    name: model.name,
+    m: model.m,
+    t: model.t,
+    sv: model.sv,
+    invSv: model.invSv,
+    invSvDescr: model.invSvDescr,
+    w: model.w,
+    ld: model.ld,
+    oc: model.oc,
+    baseSize: model.baseSize,
+    baseSizeDescr: model.baseSizeDescr,
+  };
+}
+
+function slimWeapon(weapon) {
+  return {
+    name: weapon.name,
+    range: weapon.range,
+    type: weapon.type,
+    a: weapon.a,
+    bsWs: weapon.bsWs,
+    s: weapon.s,
+    ap: weapon.ap,
+    d: weapon.d,
+    description: weapon.description,
+  };
+}
+
+function slimAbility(ability) {
+  return {
+    name: ability.name,
+    description: ability.description,
+    type: ability.type,
+  };
+}
+
+function slimOption(option) {
+  return {
+    button: option.button,
+    description: option.description,
+  };
+}
+
 function slimDatasheet(datasheet) {
   const slim = {};
   for (const key of DATASHEET_KEYS) {
     if (datasheet[key] === undefined) continue;
     if (key === 'enhancements') {
       slim.enhancements = datasheet.enhancements.map(slimEnhancement);
+    } else if (key === 'models') {
+      slim.models = datasheet.models.map(slimModel);
+    } else if (key === 'wargear') {
+      slim.wargear = datasheet.wargear.map(slimWeapon);
+    } else if (key === 'abilities') {
+      slim.abilities = datasheet.abilities.map(slimAbility);
+    } else if (key === 'options') {
+      slim.options = datasheet.options.map(slimOption);
     } else {
       slim[key] = datasheet[key];
     }
@@ -70,7 +128,7 @@ async function main() {
     await writeFile(filePath, output);
 
     const saved = ((size - Buffer.byteLength(output)) / size) * 100;
-    console.log(`Slimmed ${file}: ${(size / 1024 / 1024).toFixed(1)}MB → ${(Buffer.byteLength(output) / 1024).toFixed(0)}KB (${saved.toFixed(0)}% smaller)`);
+    console.log(`Slimmed ${file}: ${(size / 1024 / 1024).toFixed(1)}MB → ${(Buffer.byteLength(output) / 1024 / 1024).toFixed(2)}MB (${saved.toFixed(0)}% smaller)`);
     slimmed++;
   }
 

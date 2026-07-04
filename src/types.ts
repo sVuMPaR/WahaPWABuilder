@@ -53,6 +53,49 @@ export interface UnitPoints {
   role?: 'leader' | 'support';
   attachTo?: string[];
   legends?: boolean;
+  wargear?: MfmWargearOption[];
+}
+
+export interface MfmWargearOption {
+  item: string;
+  points: number;
+}
+
+export interface DatasheetModelProfile {
+  name: string;
+  m?: string;
+  t?: string;
+  sv?: string;
+  invSv?: string;
+  invSvDescr?: string;
+  w?: string;
+  ld?: string;
+  oc?: string;
+  baseSize?: string;
+  baseSizeDescr?: string;
+}
+
+export interface DatasheetWeaponProfile {
+  name: string;
+  range?: string;
+  type?: string;
+  a?: string;
+  bsWs?: string;
+  s?: string;
+  ap?: string;
+  d?: string;
+  description?: string;
+}
+
+export interface DatasheetAbility {
+  name: string;
+  description: string;
+  type?: string;
+}
+
+export interface DatasheetWargearOption {
+  button?: string;
+  description: string;
 }
 
 export interface Enhancement {
@@ -97,7 +140,12 @@ export interface Datasheet {
   name: string;
   role?: string;
   legend?: string;
+  loadout?: string;
   keywords?: DatasheetKeyword[];
+  models?: DatasheetModelProfile[];
+  wargear?: DatasheetWeaponProfile[];
+  options?: DatasheetWargearOption[];
+  abilities?: DatasheetAbility[];
   points?: UnitPoints;
   enhancements?: DatasheetEnhancementRef[];
   leaderAttachments?: { leaderId: string; attachedId: string }[];
@@ -128,7 +176,11 @@ export interface RosterUnit {
   datasheetId: string;
   name: string;
   models: number;
+  /** Total points including wargear upgrades. */
   points: number;
+  /** Base MFM cost before wargear upgrades. */
+  basePoints?: number;
+  wargear?: MfmWargearOption[];
   tierLabel: string;
   copyIndex: number;
   mfmRole?: 'leader' | 'support';

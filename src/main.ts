@@ -4,6 +4,7 @@ import { renderFactionDetail, renderFactionList } from './pages/factions';
 import { renderOfflinePrep } from './pages/offline-prep';
 import { renderNewRoster, renderRosterList } from './pages/rosters';
 import { renderRosterEditor } from './pages/roster-editor';
+import { initDatasheetModal } from './datasheet/modal';
 import { initToastHost } from './util/notify';
 import { registerSW } from 'virtual:pwa-register';
 
@@ -26,12 +27,16 @@ function ensureShell(): HTMLElement {
         </header>
         <div id="update-banner" class="update-banner" hidden></div>
         <main class="main" id="main"></main>
+        <div id="datasheet-modal-host" class="datasheet-modal-host" hidden></div>
         <div id="toast-host" class="toast-host" aria-live="polite"></div>
       </div>
     `;
 
     const toastHost = app.querySelector<HTMLElement>('#toast-host');
     if (toastHost) initToastHost(toastHost);
+
+    const modalHost = app.querySelector<HTMLElement>('#datasheet-modal-host');
+    if (modalHost) initDatasheetModal(modalHost);
 
     const status = app.querySelector<HTMLElement>('#online-status');
     const updateStatus = () => {

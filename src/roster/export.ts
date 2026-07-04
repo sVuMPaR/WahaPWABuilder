@@ -1,12 +1,13 @@
+import { unitTotalPoints } from '../datasheet/wargear';
 import { enhancementTotalPoints } from './enhancements';
 import { getAttachedUnitName } from './leaders';
-import { rosterTotalPoints } from './points';
+import { rosterUnitsPoints } from './points';
 import type { Roster } from '../types';
 import type { ValidationIssue } from './validation';
 
 export function formatRosterAsText(roster: Roster, validationIssues?: ValidationIssue[]): string {
   const lines: string[] = [];
-  const unitPoints = rosterTotalPoints(roster);
+  const unitPoints = rosterUnitsPoints(roster);
   const enhancementPoints = enhancementTotalPoints(roster);
   const total = unitPoints + enhancementPoints;
 
@@ -31,7 +32,9 @@ export function formatRosterAsText(roster: Roster, validationIssues?: Validation
       const models = unit.models === 1 ? '1 model' : `${unit.models} models`;
       const attached = getAttachedUnitName(roster, unit);
       const attachment = attached ? ` → ${attached}` : '';
-      lines.push(`  - ${unit.name} (${models}, ${unit.points} pts)${attachment}`);
+      const wargear =
+        unit.wargear?.length ? ` · ${unit.wargear.map((entry) => entry.item).join(', ')}` : '';
+      lines.push(`  - ${unit.name} (${models}, ${unitTotalPoints(unit)} pts)${wargear}${attachment}`);
     }
   }
 

@@ -1,4 +1,5 @@
 import { enhancementTotalPoints } from './enhancements';
+import { unitTotalPoints, unitWargearPoints } from '../datasheet/wargear';
 import type { CostOption, Datasheet, PricingTier, Roster, RosterUnit } from '../types';
 
 /** Whether `copy` (1-based instance of this datasheet in the army) falls in a tier range. */
@@ -47,9 +48,11 @@ export function createRosterUnit(
     datasheetId: datasheet.id,
     name: datasheet.name,
     models: cost.models,
+    basePoints: cost.points,
     points: cost.points,
     tierLabel,
     copyIndex,
+    wargear: [],
     ...(datasheet.points?.role === 'leader' || datasheet.points?.role === 'support'
       ? { mfmRole: datasheet.points.role }
       : {}),
@@ -57,7 +60,7 @@ export function createRosterUnit(
 }
 
 export function rosterUnitsPoints(roster: Roster): number {
-  return roster.units.reduce((sum, unit) => sum + unit.points, 0);
+  return roster.units.reduce((sum, unit) => sum + unitTotalPoints(unit), 0);
 }
 
 /** @deprecated Use rosterUnitsPoints or rosterGrandTotal */
@@ -93,12 +96,14 @@ export function recalculateRosterPricing(roster: Roster, datasheets: Map<string,
     if (!tier) return { ...unit, copyIndex };
 
     const cost = tier.costs.find((option) => option.models === unit.models) ?? tier.costs[0];
+    const basePoints = cost.points;
     return {
       ...unit,
       copyIndex,
       tierLabel: tier.label,
       models: cost.models,
-      points: cost.points,
+      basePoints,
+      points: basePoints + unitWargearPoints(unit),
     };
   });
 
