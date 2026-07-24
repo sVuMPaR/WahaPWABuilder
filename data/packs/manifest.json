@@ -1,6 +1,6 @@
 {
-  "packVersion": "0.0.5",
-  "builtAt": "2026-07-04T18:30:54.669Z",
+  "packVersion": "0.0.6",
+  "builtAt": "2026-07-24T08:33:36.470Z",
   "attribution": {
     "wahapedia": "https://wahapedia.ru/",
     "mfm": "https://mfm.warhammer-community.com/"
@@ -15,21 +15,25 @@
           "hash": "6f5339d4d2e9d7ee2cd3af82405d77b5093f3cc3a5d17536d306d8fb62f019e2",
           "rowCount": 72
         },
-        "factions": {
-          "hash": "ae0f00b98dde9558ca32a3fd0caa8a43e572af6ebc6093ef7e13cdab2170308c",
-          "rowCount": 26
+        "datasheets-keywords": {
+          "hash": "a08db5773ef86a20371b6c384af28a980bcae9be202e6ceddca1df1c7e084a08",
+          "rowCount": 15868
         },
         "datasheets-models": {
           "hash": "e6ce227496a992652b0b03cf511108d087b07cf1065a5c6384c001216c9e46bb",
           "rowCount": 1816
         },
+        "factions": {
+          "hash": "ae0f00b98dde9558ca32a3fd0caa8a43e572af6ebc6093ef7e13cdab2170308c",
+          "rowCount": 26
+        },
+        "datasheets": {
+          "hash": "4f9a51e77709d737c7915bf34438c239dc46ca3cee81c36d0f1788c55a8250e2",
+          "rowCount": 1711
+        },
         "datasheets-options": {
           "hash": "194deaa02c76670078347006bb7007f3057588866b07cb6dd3110cf84e66961d",
           "rowCount": 2831
-        },
-        "datasheets-wargear": {
-          "hash": "552dab0b3c8cffc91f2ab73e92045a14648587b1a4acf4e4ec75afca28843680",
-          "rowCount": 9353
         },
         "datasheets-unit-composition": {
           "hash": "79978453e2266efe6cf5257531155d835c543a03fd47293c2e7d056c41199f82",
@@ -39,17 +43,13 @@
           "hash": "ec6e9432835afc3ea731c69bd99864df0a29e3ef93fdde4b669feb6cc7d34ede",
           "rowCount": 2135
         },
-        "datasheets-abilities": {
-          "hash": "9855c6d5ac69b20f8c7b39a53e5eb877a6c2e7975ddf1f286f7216da756022b9",
-          "rowCount": 7153
-        },
         "datasheets-enhancements": {
           "hash": "14b20200a7ed14b670b9bd883d192ca857ee3d3597174db341494d8543bcfecc",
           "rowCount": 11583
         },
-        "datasheets": {
-          "hash": "4f9a51e77709d737c7915bf34438c239dc46ca3cee81c36d0f1788c55a8250e2",
-          "rowCount": 1711
+        "datasheets-stratagems": {
+          "hash": "6030cfca760a3ede634bc183da17d1c1fb9b587fdc83656dfe864db256c9d593",
+          "rowCount": 91089
         },
         "datasheets-detachment-abilities": {
           "hash": "367636e9068e7f0ab5dc6113d8a12284c2f4c40af20a46e4c40fd3912e490236",
@@ -59,13 +59,17 @@
           "hash": "f78ae17f011420786b828e943d449262344ed196f3f9810e8d77b0e9c51883ea",
           "rowCount": 1918
         },
-        "datasheets-keywords": {
-          "hash": "a08db5773ef86a20371b6c384af28a980bcae9be202e6ceddca1df1c7e084a08",
-          "rowCount": 15868
+        "stratagems": {
+          "hash": "69d6e7305820b7354181f99879c243c0d2be1e9c988ea32e75dae971468f43e9",
+          "rowCount": 1482
         },
         "abilities": {
           "hash": "2d53801862ee9500e217bd3cca46272f732b69b22b3c9ff49ec6cd8cc1d4989c",
           "rowCount": 90
+        },
+        "enhancements": {
+          "hash": "5d9f0314c97521885bae37c3a402c04d69aeb9ea122af0fef82bad46c2c52d03",
+          "rowCount": 927
         },
         "detachments": {
           "hash": "bf7d95b6d2f85e1350d2349c0479ad54f5f3e1c7ca3a00e45af022bc87024c82",
@@ -79,24 +83,20 @@
           "hash": "638395a3342ca2c07cb4148ef327c73b7d5db68d02d48b72784dad889b0984e7",
           "rowCount": 1
         },
-        "enhancements": {
-          "hash": "5d9f0314c97521885bae37c3a402c04d69aeb9ea122af0fef82bad46c2c52d03",
-          "rowCount": 927
+        "datasheets-wargear": {
+          "hash": "552dab0b3c8cffc91f2ab73e92045a14648587b1a4acf4e4ec75afca28843680",
+          "rowCount": 9353
         },
-        "stratagems": {
-          "hash": "69d6e7305820b7354181f99879c243c0d2be1e9c988ea32e75dae971468f43e9",
-          "rowCount": 1482
-        },
-        "datasheets-stratagems": {
-          "hash": "6030cfca760a3ede634bc183da17d1c1fb9b587fdc83656dfe864db256c9d593",
-          "rowCount": 91089
+        "datasheets-abilities": {
+          "hash": "9855c6d5ac69b20f8c7b39a53e5eb877a6c2e7975ddf1f286f7216da756022b9",
+          "rowCount": 7153
         }
       }
     },
     "mfm": {
-      "version": "1.0",
-      "contentHash": "437aac72de54b8cd24652e8f7f343178c2dae7f90d4d5e6c713742dc8fda6565",
-      "hash": "f61893b8d9914b86adb2d6e08b43b653128a1c2e64c4b4ca3d977bd362ed8a8f",
+      "version": "1.1",
+      "contentHash": "52eb9d047da4a49146243a0747bf9f2a2c10abf927bd1fe0b80bab2b0935af22",
+      "hash": "b9ff34a767377e46b285b9e66d481840fda204d39328e80d2c75e7dbbe0f6211",
       "factionCount": 30,
       "status": "merged"
     }
@@ -312,29 +312,29 @@
   "mfm": {
     "indexPath": "mfm/index.json",
     "merge": {
-      "version": "1.0",
-      "contentHash": "437aac72de54b8cd24652e8f7f343178c2dae7f90d4d5e6c713742dc8fda6565",
+      "version": "1.1",
+      "contentHash": "52eb9d047da4a49146243a0747bf9f2a2c10abf927bd1fe0b80bab2b0935af22",
       "factionsWithMfm": 24,
-      "totalMatched": 953,
-      "totalUnmatched": 738,
+      "totalMatched": 735,
+      "totalUnmatched": 956,
       "summary": [
         {
           "id": "AS",
           "slug": "adepta-sororitas",
-          "matchedUnits": 33,
-          "unmatchedUnits": 5
+          "matchedUnits": 20,
+          "unmatchedUnits": 18
         },
         {
           "id": "AC",
           "slug": "adeptus-custodes",
-          "matchedUnits": 31,
-          "unmatchedUnits": 0
+          "matchedUnits": 27,
+          "unmatchedUnits": 4
         },
         {
           "id": "AdM",
           "slug": "adeptus-mechanicus",
-          "matchedUnits": 34,
-          "unmatchedUnits": 5
+          "matchedUnits": 26,
+          "unmatchedUnits": 13
         },
         {
           "id": "TL",
@@ -345,122 +345,122 @@
         {
           "id": "AE",
           "slug": "aeldari",
-          "matchedUnits": 71,
-          "unmatchedUnits": 26
+          "matchedUnits": 48,
+          "unmatchedUnits": 49
         },
         {
           "id": "AM",
           "slug": "astra-militarum",
-          "matchedUnits": 72,
-          "unmatchedUnits": 62
+          "matchedUnits": 51,
+          "unmatchedUnits": 83
         },
         {
           "id": "CD",
           "slug": "chaos-daemons",
-          "matchedUnits": 54,
-          "unmatchedUnits": 52
+          "matchedUnits": 48,
+          "unmatchedUnits": 58
         },
         {
           "id": "QT",
           "slug": "chaos-knights",
-          "matchedUnits": 20,
-          "unmatchedUnits": 17
+          "matchedUnits": 18,
+          "unmatchedUnits": 19
         },
         {
           "id": "CSM",
           "slug": "chaos-space-marines",
-          "matchedUnits": 54,
-          "unmatchedUnits": 58
+          "matchedUnits": 37,
+          "unmatchedUnits": 75
         },
         {
           "id": "DG",
           "slug": "death-guard",
-          "matchedUnits": 35,
-          "unmatchedUnits": 36
+          "matchedUnits": 30,
+          "unmatchedUnits": 41
         },
         {
           "id": "DRU",
           "slug": "drukhari",
-          "matchedUnits": 23,
-          "unmatchedUnits": 24
+          "matchedUnits": 20,
+          "unmatchedUnits": 27
         },
         {
           "id": "EC",
           "slug": "emperors-children",
-          "matchedUnits": 23,
-          "unmatchedUnits": 0
+          "matchedUnits": 16,
+          "unmatchedUnits": 7
         },
         {
           "id": "GC",
           "slug": "genestealer-cults",
-          "matchedUnits": 24,
-          "unmatchedUnits": 114
+          "matchedUnits": 16,
+          "unmatchedUnits": 122
         },
         {
           "id": "GK",
           "slug": "grey-knights",
-          "matchedUnits": 26,
-          "unmatchedUnits": 5
+          "matchedUnits": 21,
+          "unmatchedUnits": 10
         },
         {
           "id": "AoI",
           "slug": "imperial-agents",
-          "matchedUnits": 29,
-          "unmatchedUnits": 17
+          "matchedUnits": 24,
+          "unmatchedUnits": 22
         },
         {
           "id": "QI",
           "slug": "imperial-knights",
-          "matchedUnits": 22,
-          "unmatchedUnits": 6
+          "matchedUnits": 21,
+          "unmatchedUnits": 7
         },
         {
           "id": "LoV",
           "slug": "leagues-of-votann",
-          "matchedUnits": 22,
-          "unmatchedUnits": 0
+          "matchedUnits": 17,
+          "unmatchedUnits": 5
         },
         {
           "id": "NEC",
           "slug": "necrons",
-          "matchedUnits": 52,
-          "unmatchedUnits": 12
+          "matchedUnits": 43,
+          "unmatchedUnits": 21
         },
         {
           "id": "ORK",
           "slug": "orks",
-          "matchedUnits": 54,
-          "unmatchedUnits": 33
+          "matchedUnits": 46,
+          "unmatchedUnits": 41
         },
         {
           "id": "SM",
           "slug": "space-marines",
-          "matchedUnits": 111,
-          "unmatchedUnits": 187
+          "matchedUnits": 84,
+          "unmatchedUnits": 214
         },
         {
           "id": "TAU",
           "slug": "tau-empire",
-          "matchedUnits": 43,
-          "unmatchedUnits": 20
+          "matchedUnits": 33,
+          "unmatchedUnits": 30
         },
         {
           "id": "TS",
           "slug": "thousand-sons",
-          "matchedUnits": 34,
-          "unmatchedUnits": 26
+          "matchedUnits": 23,
+          "unmatchedUnits": 37
         },
         {
           "id": "TYR",
           "slug": "tyranids",
-          "matchedUnits": 52,
-          "unmatchedUnits": 5
+          "matchedUnits": 46,
+          "unmatchedUnits": 11
         },
         {
           "id": "WE",
           "slug": "world-eaters",
-          "matchedUnits": 30,
-          "unmatchedUnits": 28
+          "matchedUnits": 16,
+          "unmatchedUnits": 42
         }
       ]
     }
