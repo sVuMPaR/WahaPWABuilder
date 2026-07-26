@@ -61,6 +61,25 @@ a {
   margin-left: auto;
 }
 
+.lang-toggle {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  min-width: 2.5rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.lang-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .nav-link {
   color: var(--muted);
   text-decoration: none;
@@ -367,6 +386,48 @@ body.modal-open {
 .weapon-table th {
   color: var(--muted);
   font-weight: 600;
+}
+
+.point-limit-locked {
+  opacity: 0.85;
+  cursor: default;
+}
+
+.battle-size-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .battle-size-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.army-group + .army-group,
+.picker-group + .picker-group {
+  margin-top: 1rem;
+}
+
+.army-group-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.enhancement-hint,
+.enhancement-available {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.enhancement-available {
+  opacity: 0.9;
 }
 
 .inv-save {
@@ -1115,3 +1176,4 @@ body.modal-open {
     max-width: 240px;
   }
 }
+

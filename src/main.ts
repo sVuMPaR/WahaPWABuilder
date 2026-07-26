@@ -6,12 +6,14 @@ import { renderNewRoster, renderRosterList } from './pages/rosters';
 import { renderRosterEditor } from './pages/roster-editor';
 import { initDatasheetModal } from './datasheet/modal';
 import { initToastHost } from './util/notify';
+import { getLocale, localeLabel, onLocaleChange, t, toggleLocale } from './i18n';
 import { registerSW } from 'virtual:pwa-register';
 
 const app = document.querySelector<HTMLElement>('#app')!;
 let shellReady = false;
 let updateAvailable = false;
 let applyUpdate: ((reload?: boolean) => Promise<void>) | null = null;
+let remountCurrentRoute: (() => void) | null = null;
 
 function ensureShell(): HTMLElement {
   if (!shellReady) {
@@ -20,9 +22,10 @@ function ensureShell(): HTMLElement {
         <header class="topbar">
           <a href="#/" class="brand">Waha PWA Builder</a>
           <nav class="nav">
-            <a href="#/" class="nav-link">Factions</a>
-            <a href="#/rosters" class="nav-link">Rosters</a>
+            <a href="#/" class="nav-link" data-i18n="nav.factions">${t('nav.factions')}</a>
+            <a href="#/rosters" class="nav-link" data-i18n="nav.rosters">${t('nav.rosters')}</a>
           </nav>
+          <button type="button" class="lang-toggle" id="lang-toggle" aria-label="Language">${localeLabel()}</button>
           <span id="online-status" class="status" aria-live="polite"></span>
         </header>
         <div id="update-banner" class="update-banner" hidden></div>
@@ -41,12 +44,29 @@ function ensureShell(): HTMLElement {
     const status = app.querySelector<HTMLElement>('#online-status');
     const updateStatus = () => {
       if (!status) return;
-      status.textContent = navigator.onLine ? '' : 'Offline';
+      status.textContent = navigator.onLine ? '' : t('status.offline');
       status.classList.toggle('offline', !navigator.onLine);
     };
     window.addEventListener('online', updateStatus);
     window.addEventListener('offline', updateStatus);
     updateStatus();
+
+    app.querySelector('#lang-toggle')?.addEventListener('click', () => {
+      toggleLocale();
+    });
+
+    onLocaleChange(() => {
+      const toggle = app.querySelector<HTMLButtonElement>('#lang-toggle');
+      if (toggle) toggle.textContent = localeLabel();
+      for (const link of app.querySelectorAll<HTMLAnchorElement>('[data-i18n]')) {
+        const key = link.dataset.i18n;
+        if (key === 'nav.factions') link.textContent = t('nav.factions');
+        if (key === 'nav.rosters') link.textContent = t('nav.rosters');
+      }
+      updateStatus();
+      renderUpdateBanner();
+      remountCurrentRoute?.();
+    });
 
     shellReady = true;
   }
@@ -67,9 +87,9 @@ function renderUpdateBanner() {
 
   banner.hidden = false;
   banner.innerHTML = `
-    <span class="update-banner-text">New version available.</span>
-    <button type="button" class="btn small primary" id="sw-reload-btn">Reload</button>
-    <button type="button" class="btn small ghost" id="sw-dismiss-btn">Later</button>
+    <span class="update-banner-text">${t('update.available')}</span>
+    <button type="button" class="btn small primary" id="sw-reload-btn">${t('update.reload')}</button>
+    <button type="button" class="btn small ghost" id="sw-dismiss-btn">${t('update.later')}</button>
   `;
 
   banner.querySelector('#sw-reload-btn')?.addEventListener('click', () => {
@@ -82,11 +102,13 @@ function renderUpdateBanner() {
 }
 
 async function renderHome() {
+  remountCurrentRoute = () => void renderHome();
   const main = ensureShell();
   await renderFactionList(main);
 }
 
 async function renderFaction() {
+  remountCurrentRoute = () => void renderFaction();
   const id = parseFactionRoute();
   if (!id) {
     navigate('/');
@@ -97,11 +119,13 @@ async function renderFaction() {
 }
 
 async function renderRosters() {
+  remountCurrentRoute = () => void renderRosters();
   const main = ensureShell();
   await renderRosterList(main);
 }
 
 async function renderNewRosterPage() {
+  remountCurrentRoute = () => void renderNewRosterPage();
   const parsed = parseRosterRoute();
   const main = ensureShell();
   const factionId = parsed?.kind === 'new' ? parsed.factionId : undefined;
@@ -109,6 +133,7 @@ async function renderNewRosterPage() {
 }
 
 async function renderRosterEdit() {
+  remountCurrentRoute = () => void renderRosterEdit();
   const parsed = parseRosterRoute();
   if (!parsed || parsed.kind !== 'edit') {
     navigate('/rosters');
@@ -119,6 +144,7 @@ async function renderRosterEdit() {
 }
 
 async function renderOfflinePrepPage() {
+  remountCurrentRoute = () => void renderOfflinePrepPage();
   const main = ensureShell();
   await renderOfflinePrep(main);
 }
@@ -151,3 +177,5 @@ applyUpdate = registerSW({
     renderUpdateBanner();
   },
 });
+
+void getLocale();
