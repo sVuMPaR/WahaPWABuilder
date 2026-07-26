@@ -5,13 +5,37 @@ import { escapeHtml } from '../util/html';
 import { renderOfflineError } from '../util/offline-ui';
 import { showToast } from '../util/notify';
 import { navigate } from '../router';
+import { t } from '../i18n';
 import type { BattleSize, Roster } from '../types';
 import { BATTLE_SIZE_LIMITS, CUSTOM_POINT_LIMIT } from '../types';
 
 let pendingDeleteId: string | null = null;
 
+function battleSizeLabel(size: BattleSize): string {
+  switch (size) {
+    case 'incursion':
+      return t('battle.incursion');
+    case 'strike-force':
+      return t('battle.strikeForce');
+    case 'onslaught':
+      return t('battle.onslaught');
+    default:
+      return t('roster.new.custom');
+  }
+}
+
+function pointLimitForBattleSize(battleSize: BattleSize, customPoints?: number): number {
+  if (battleSize === 'custom') {
+    const custom = customPoints ?? CUSTOM_POINT_LIMIT.default;
+    return Number.isFinite(custom) && custom >= CUSTOM_POINT_LIMIT.min && custom <= CUSTOM_POINT_LIMIT.max
+      ? custom
+      : CUSTOM_POINT_LIMIT.default;
+  }
+  return BATTLE_SIZE_LIMITS[battleSize];
+}
+
 export async function renderRosterList(root: HTMLElement) {
-  root.innerHTML = '<p class="loading">Loading rosters…</p>';
+  root.innerHTML = `<p class="loading">${t('common.loading')}</p>`;
 
   try {
     const [rosters, factions, manifest] = await Promise.all([
@@ -26,17 +50,17 @@ export async function renderRosterList(root: HTMLElement) {
     <section class="panel">
       <header class="panel-header">
         <div>
-          <h2>Rosters</h2>
-          <p class="muted">Data pack v${escapeHtml(manifest.packVersion)} · stored on this device</p>
+          <h2>${t('rosters.title')}</h2>
+          <p class="muted">${t('rosters.meta', { version: escapeHtml(manifest.packVersion) })}</p>
         </div>
         <div class="header-actions">
-          <button type="button" class="btn ghost" id="offline-prep-btn">Prepare offline</button>
-          <button type="button" class="btn primary" id="new-roster-btn">New roster</button>
+          <button type="button" class="btn ghost" id="offline-prep-btn">${t('rosters.prepareOffline')}</button>
+          <button type="button" class="btn primary" id="new-roster-btn">${t('rosters.new')}</button>
         </div>
       </header>
       ${
         rosters.length === 0
-          ? '<p class="empty">No rosters yet. Create one to start building an army list.</p>'
+          ? `<p class="empty">${t('rosters.empty')}</p>`
           : `<ul class="roster-list">
         ${rosters
           .map((roster) => {
@@ -53,11 +77,11 @@ export async function renderRosterList(root: HTMLElement) {
             ${
               confirming
                 ? `<div class="delete-confirm">
-              <span class="delete-confirm-text">Delete this roster?</span>
-              <button type="button" class="btn small danger confirm-delete" data-id="${roster.id}">Delete</button>
-              <button type="button" class="btn small ghost cancel-delete">Cancel</button>
+              <span class="delete-confirm-text">${t('rosters.deleteConfirm')}</span>
+              <button type="button" class="btn small danger confirm-delete" data-id="${roster.id}">${t('common.delete')}</button>
+              <button type="button" class="btn small ghost cancel-delete">${t('common.cancel')}</button>
             </div>`
-                : `<button type="button" class="btn icon danger roster-delete" data-id="${roster.id}" title="Delete roster">×</button>`
+                : `<button type="button" class="btn icon danger roster-delete" data-id="${roster.id}" title="${t('common.delete')}">×</button>`
             }
           </li>`;
           })
@@ -97,19 +121,19 @@ export async function renderRosterList(root: HTMLElement) {
         if (!id) return;
         await deleteRoster(id);
         pendingDeleteId = null;
-        showToast('Roster deleted.', 'info', 2500);
+        showToast(t('rosters.deleted'), 'info', 2500);
         await renderRosterList(root);
       });
     }
   } catch (error) {
     pendingDeleteId = null;
-    const message = isOfflineDataError(error) ? error.message : 'Could not load rosters.';
-    renderOfflineError(root, 'Offline', message, '← Factions', '/');
+    const message = isOfflineDataError(error) ? error.message : t('rosters.loadError');
+    renderOfflineError(root, t('status.offline'), message, `← ${t('nav.factions')}`, '/');
   }
 }
 
 export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: string) {
-  root.innerHTML = '<p class="loading">Loading…</p>';
+  root.innerHTML = `<p class="loading">${t('common.loading')}</p>`;
 
   try {
     const [factions, manifest] = await Promise.all([loadFactionIndex(), loadManifest()]);
@@ -118,18 +142,18 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
     root.innerHTML = `
     <section class="panel">
       <header class="panel-header">
-        <button type="button" class="back" id="back-btn">← Rosters</button>
-        <h2>New roster</h2>
+        <button type="button" class="back" id="back-btn">← ${t('rosters.title')}</button>
+        <h2>${t('roster.new.title')}</h2>
       </header>
       <form id="new-roster-form" class="form">
         <label class="field">
-          <span>Name</span>
-          <input type="text" name="name" required maxlength="80" placeholder="My army list" />
+          <span>${t('roster.new.name')}</span>
+          <input type="text" name="name" required maxlength="80" placeholder="${t('roster.new.namePlaceholder')}" />
         </label>
         <label class="field">
-          <span>Faction</span>
+          <span>${t('roster.new.faction')}</span>
           <select name="factionId" required>
-            <option value="">Select faction…</option>
+            <option value="">${t('roster.new.selectFaction')}</option>
             ${factions
               .map(
                 (f) =>
@@ -139,42 +163,57 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
           </select>
         </label>
         <label class="field">
-          <span>Battle size</span>
+          <span>${t('roster.new.battleSize')}</span>
           <select name="battleSize" id="battle-size-select" required>
-            <option value="incursion">Incursion (${BATTLE_SIZE_LIMITS.incursion} pts)</option>
-            <option value="strike-force" selected>Strike Force (${BATTLE_SIZE_LIMITS['strike-force']} pts)</option>
-            <option value="onslaught">Onslaught (${BATTLE_SIZE_LIMITS.onslaught} pts)</option>
-            <option value="custom">Custom limit…</option>
+            <option value="incursion">${battleSizeLabel('incursion')} (${BATTLE_SIZE_LIMITS.incursion} pts)</option>
+            <option value="strike-force" selected>${battleSizeLabel('strike-force')} (${BATTLE_SIZE_LIMITS['strike-force']} pts)</option>
+            <option value="onslaught">${battleSizeLabel('onslaught')} (${BATTLE_SIZE_LIMITS.onslaught} pts)</option>
+            <option value="custom">${t('roster.new.custom')}</option>
           </select>
         </label>
-        <label class="field" id="custom-points-field" hidden>
-          <span>Point limit</span>
+        <label class="field" id="point-limit-field">
+          <span>${t('roster.new.pointLimit')}</span>
           <input
             type="number"
-            name="customPoints"
+            name="pointLimit"
+            id="point-limit-input"
             min="${CUSTOM_POINT_LIMIT.min}"
             max="${CUSTOM_POINT_LIMIT.max}"
             step="${CUSTOM_POINT_LIMIT.step}"
-            value="${CUSTOM_POINT_LIMIT.default}"
+            value="${BATTLE_SIZE_LIMITS['strike-force']}"
+            readonly
           />
-          <span class="muted field-hint">${CUSTOM_POINT_LIMIT.min}–${CUSTOM_POINT_LIMIT.max} pts, casual / open play</span>
+          <span class="muted field-hint">${t('roster.new.pointLimitHint', {
+            min: CUSTOM_POINT_LIMIT.min,
+            max: CUSTOM_POINT_LIMIT.max,
+          })}</span>
         </label>
         <div class="form-actions">
-          <button type="submit" class="btn primary">Create roster</button>
+          <button type="submit" class="btn primary">${t('roster.new.create')}</button>
         </div>
       </form>
-      <p class="muted form-note">Lists are saved locally and tagged with data pack v${escapeHtml(manifest.packVersion)}.</p>
+      <p class="muted form-note">${t('roster.new.note', { version: escapeHtml(manifest.packVersion) })}</p>
     </section>
   `;
 
     root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/rosters'));
 
     const battleSizeSelect = root.querySelector<HTMLSelectElement>('#battle-size-select');
-    const customField = root.querySelector<HTMLLabelElement>('#custom-points-field');
-    battleSizeSelect?.addEventListener('change', () => {
-      if (!customField) return;
-      customField.hidden = battleSizeSelect.value !== 'custom';
-    });
+    const pointLimitInput = root.querySelector<HTMLInputElement>('#point-limit-input');
+
+    const syncPointLimit = () => {
+      if (!battleSizeSelect || !pointLimitInput) return;
+      const size = battleSizeSelect.value as BattleSize;
+      const isCustom = size === 'custom';
+      pointLimitInput.readOnly = !isCustom;
+      pointLimitInput.classList.toggle('point-limit-locked', !isCustom);
+      if (!isCustom) {
+        pointLimitInput.value = String(pointLimitForBattleSize(size));
+      }
+    };
+
+    battleSizeSelect?.addEventListener('change', syncPointLimit);
+    syncPointLimit();
 
     root.querySelector<HTMLFormElement>('#new-roster-form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -185,14 +224,7 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
       if (!faction) return;
 
       const battleSize = String(data.get('battleSize')) as BattleSize;
-      let pointLimit = BATTLE_SIZE_LIMITS[battleSize as keyof typeof BATTLE_SIZE_LIMITS];
-      if (battleSize === 'custom') {
-        const custom = Number(data.get('customPoints'));
-        pointLimit =
-          Number.isFinite(custom) && custom >= CUSTOM_POINT_LIMIT.min && custom <= CUSTOM_POINT_LIMIT.max
-            ? custom
-            : CUSTOM_POINT_LIMIT.default;
-      }
+      const pointLimit = pointLimitForBattleSize(battleSize, Number(data.get('pointLimit')));
 
       const now = new Date().toISOString();
       const roster: Roster = {
@@ -214,7 +246,7 @@ export async function renderNewRoster(root: HTMLElement, preselectedFactionId?: 
       navigate(`/roster/${roster.id}`);
     });
   } catch (error) {
-    const message = isOfflineDataError(error) ? error.message : 'Could not load faction list.';
-    renderOfflineError(root, 'Offline', message, '← Rosters', '/rosters');
+    const message = isOfflineDataError(error) ? error.message : t('roster.new.loadError');
+    renderOfflineError(root, t('status.offline'), message, `← ${t('rosters.title')}`, '/rosters');
   }
 }

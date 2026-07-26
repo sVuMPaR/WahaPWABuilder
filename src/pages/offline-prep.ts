@@ -4,18 +4,17 @@ import { navigate } from '../router';
 import { renderOfflineError } from '../util/offline-ui';
 import { escapeHtml } from '../util/html';
 import { showToast } from '../util/notify';
+import { t } from '../i18n';
 
 export async function renderOfflinePrep(root: HTMLElement) {
-  root.innerHTML = '<p class="loading">Loading…</p>';
+  root.innerHTML = `<p class="loading">${t('common.loading')}</p>`;
 
   try {
     const { factions, cachedIds, rosterFactionIds } = await getOfflinePrepContext();
     renderOfflinePrepForm(root, factions, cachedIds, rosterFactionIds);
   } catch (error) {
-    const message = isOfflineDataError(error)
-      ? error.message
-      : 'Could not load faction catalog.';
-    renderOfflineError(root, 'Offline', message);
+    const message = isOfflineDataError(error) ? error.message : t('factions.loadError');
+    renderOfflineError(root, t('status.offline'), message);
   }
 }
 
@@ -30,18 +29,18 @@ function renderOfflinePrepForm(
   root.innerHTML = `
     <section class="panel">
       <header class="panel-header">
-        <button type="button" class="back" id="back-btn">← Factions</button>
+        <button type="button" class="back" id="back-btn">← ${t('factions.title')}</button>
         <div>
-          <h2>Prepare offline</h2>
-          <p class="muted">Download faction data to this device while online. Selected armies will work without internet later.</p>
+          <h2>${t('offline.title')}</h2>
+          <p class="muted">${t('offline.desc')}</p>
         </div>
       </header>
 
       <div class="offline-prep-actions">
-        <button type="button" class="btn ghost small" id="select-rosters-btn">From rosters</button>
-        <button type="button" class="btn ghost small" id="select-uncached-btn">Not cached yet</button>
-        <button type="button" class="btn ghost small" id="select-all-btn">Select all</button>
-        <button type="button" class="btn ghost small" id="clear-all-btn">Clear</button>
+        <button type="button" class="btn ghost small" id="select-rosters-btn">${t('offline.fromRosters')}</button>
+        <button type="button" class="btn ghost small" id="select-uncached-btn">${t('offline.notCached')}</button>
+        <button type="button" class="btn ghost small" id="select-all-btn">${t('offline.selectAll')}</button>
+        <button type="button" class="btn ghost small" id="clear-all-btn">${t('offline.clear')}</button>
       </div>
 
       <ul class="offline-prep-list" id="faction-prep-list">
@@ -54,7 +53,7 @@ function renderOfflinePrepForm(
             <label class="offline-prep-label">
               <input type="checkbox" name="faction" value="${faction.id}" data-path="${escapeHtml(faction.path)}"${checked ? ' checked' : ''} />
               <span class="offline-prep-name">${escapeHtml(faction.name)}</span>
-              ${cached ? '<span class="badge cached">Cached</span>' : ''}
+              ${cached ? `<span class="badge cached">${t('offline.cached')}</span>` : ''}
             </label>
           </li>`;
           })
@@ -62,7 +61,7 @@ function renderOfflinePrepForm(
       </ul>
 
       <div id="prep-progress" class="prep-progress" hidden>
-        <p class="prep-progress-label" id="prep-progress-label">Downloading…</p>
+        <p class="prep-progress-label" id="prep-progress-label">${t('offline.downloading')}</p>
         <div class="prep-progress-bar">
           <div class="prep-progress-fill" id="prep-progress-fill"></div>
         </div>
@@ -71,7 +70,7 @@ function renderOfflinePrepForm(
       <div id="prep-result" class="prep-result" hidden></div>
 
       <div class="form-actions">
-        <button type="button" class="btn primary" id="start-prep-btn">Download selected</button>
+        <button type="button" class="btn primary" id="start-prep-btn">${t('offline.download')}</button>
       </div>
     </section>
   `;
@@ -104,12 +103,12 @@ function renderOfflinePrepForm(
   root.querySelector('#start-prep-btn')?.addEventListener('click', async () => {
     const selected = checkboxes().filter((box) => box.checked);
     if (selected.length === 0) {
-      showToast('Select at least one faction to download.', 'error');
+      showToast(t('offline.notCached'), 'error');
       return;
     }
 
     if (!navigator.onLine) {
-      showToast('You are offline. Connect to the internet to download data.', 'error');
+      showToast(t('status.offline'), 'error');
       return;
     }
 
@@ -134,19 +133,19 @@ function renderOfflinePrepForm(
         if (!progressLabel || !progressFill) return;
 
         if (progress.phase === 'catalog') {
-          progressLabel.textContent = `Downloading catalog (${progress.done}/${progress.total})…`;
+          progressLabel.textContent = `${t('offline.downloading')} (${progress.done}/${progress.total})`;
           progressFill.style.width = `${Math.round((progress.done / progress.total) * 100)}%`;
           return;
         }
 
         const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
         progressLabel.textContent = progress.currentName
-          ? `Downloading ${progress.currentName} (${progress.done + 1}/${progress.total})…`
-          : `Downloading factions (${progress.done}/${progress.total})…`;
+          ? `${progress.currentName} (${progress.done + 1}/${progress.total})`
+          : `${t('offline.downloading')} (${progress.done}/${progress.total})`;
         progressFill.style.width = `${pct}%`;
       });
 
-      if (progressLabel) progressLabel.textContent = 'Done';
+      if (progressLabel) progressLabel.textContent = 'OK';
       if (progressFill) progressFill.style.width = '100%';
 
       if (resultEl) {
@@ -163,22 +162,16 @@ function renderOfflinePrepForm(
 
         resultEl.innerHTML = `
           <p class="prep-result-summary ${result.failed.length ? 'warning' : 'success'}">
-            Downloaded ${result.ok.length} faction${result.ok.length === 1 ? '' : 's'}${result.failed.length ? `, ${result.failed.length} failed` : ''}.
+            ${result.ok.length} / ${entries.length}
           </p>
           ${failedList}
         `;
       }
 
-      if (result.failed.length === 0) {
-        showToast(`${result.ok.length} faction(s) ready for offline use.`, 'success', 5000);
-      } else {
-        showToast(`${result.failed.length} faction(s) failed to download.`, 'error', 5000);
-      }
-
       for (const id of result.ok) cachedIds.add(id);
       renderOfflinePrepForm(root, factions, cachedIds, rosterFactionIds);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Download failed.';
+      const message = error instanceof Error ? error.message : t('common.error');
       showToast(message, 'error', 5000);
       if (startBtn) startBtn.disabled = false;
       progressEl?.setAttribute('hidden', '');

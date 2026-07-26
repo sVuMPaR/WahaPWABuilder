@@ -1,11 +1,18 @@
 import { escapeHtml } from '../util/html';
+import { showToast } from '../util/notify';
 import {
   getDefaultLoadoutSelections,
   getStandaloneMfmOptions,
   getUnparsedOptions,
   parseDatasheetLoadout,
+  parseDefaultLoadoutItems,
 } from './loadout-parser';
 import { splitUnitWargear } from './loadout';
+import {
+  collectSelectionsFromModal,
+  isChoiceAvailable,
+  validateLoadoutSelections,
+} from './loadout-validation';
 import { formatStatsPreview, formatStatsRow, getPrimaryProfile, hasUnitStats } from './stats';
 import { unitTotalPoints } from './wargear';
 import type { Datasheet, LoadoutSelection, MfmWargearOption, ParsedLoadoutGroup, RosterUnit } from '../types';
@@ -92,8 +99,18 @@ function renderLoadoutGroup(
   group: ParsedLoadoutGroup,
   selectedChoiceId: string | null,
   interactive: boolean,
+  groups: ParsedLoadoutGroup[],
+  selections: LoadoutSelection[],
+  defaultItems: string[],
 ): string {
   const pointsLabel = (points: number) => (points > 0 ? `<span class="wargear-points">+${points} pts</span>` : '');
+
+  const choiceAttrs = (choiceId: string, choiceLabel: string, availability: { ok: boolean; reason?: string }) => {
+    const disabled = interactive && !availability.ok;
+    const title = disabled && availability.reason ? ` title="${escapeHtml(availability.reason)}"` : '';
+    const klass = disabled ? ' loadout-choice-disabled' : '';
+    return { disabled: disabled ? ' disabled' : '', title, klass, choiceId, choiceLabel };
+  };
 
   if (group.type === 'exclusive') {
     const choices = interactive
@@ -103,30 +120,35 @@ function renderLoadoutGroup(
         <span>Stock loadout</span>
       </label>
       ${group.choices
-        .map(
-          (choice) => `
-      <label class="loadout-choice">
-        <input type="radio" name="loadout-${group.id}" value="${escapeHtml(choice.id)}"${selectedChoiceId === choice.id ? ' checked' : ''} />
+        .map((choice) => {
+          const availability = isChoiceAvailable(group, choice, groups, selections, defaultItems);
+          const attrs = choiceAttrs(choice.id, choice.label, availability);
+          return `
+      <label class="loadout-choice${attrs.klass}"${attrs.title}>
+        <input type="radio" name="loadout-${group.id}" value="${escapeHtml(choice.id)}"${selectedChoiceId === choice.id ? ' checked' : ''}${attrs.disabled} />
         <span>${escapeHtml(choice.label)}</span>
         ${pointsLabel(choice.points)}
-      </label>`,
-        )
+      </label>`;
+        })
         .join('')}`
       : `<ul class="modal-list">${group.choices.map((choice) => `<li>${escapeHtml(choice.label)} ${pointsLabel(choice.points)}</li>`).join('')}</ul>`;
 
     return `
-      <div class="loadout-group">
+      <div class="loadout-group" data-group-id="${escapeHtml(group.id)}">
         <p class="loadout-group-label">${escapeHtml(group.label)}</p>
         <div class="loadout-choices">${choices}</div>
       </div>`;
   }
 
+  const checkboxTypes = group.type === 'optional' || group.type === 'per-model' || group.type === 'ratio-optional';
   const choices = group.choices
     .map((choice) => {
-      if (interactive) {
+      if (interactive && checkboxTypes) {
+        const availability = isChoiceAvailable(group, choice, groups, selections, defaultItems);
+        const attrs = choiceAttrs(choice.id, choice.label, availability);
         return `
-      <label class="loadout-choice">
-        <input type="checkbox" class="loadout-checkbox" data-group-id="${escapeHtml(group.id)}" data-choice-id="${escapeHtml(choice.id)}"${selectedChoiceId === choice.id ? ' checked' : ''} />
+      <label class="loadout-choice${attrs.klass}"${attrs.title}>
+        <input type="checkbox" class="loadout-checkbox" data-group-id="${escapeHtml(group.id)}" data-choice-id="${escapeHtml(choice.id)}"${selectedChoiceId === choice.id ? ' checked' : ''}${attrs.disabled} />
         <span>${escapeHtml(choice.label)}</span>
         ${pointsLabel(choice.points)}
       </label>`;
@@ -136,10 +158,43 @@ function renderLoadoutGroup(
     .join('');
 
   return `
-    <div class="loadout-group">
+    <div class="loadout-group" data-group-id="${escapeHtml(group.id)}">
       <p class="loadout-group-label">${escapeHtml(group.label)}</p>
-      ${interactive ? `<div class="loadout-choices">${choices}</div>` : `<ul class="modal-list">${choices}</ul>`}
+      ${interactive && checkboxTypes ? `<div class="loadout-choices">${choices}</div>` : `<ul class="modal-list">${choices}</ul>`}
     </div>`;
+}
+
+function renderValidationPanel(datasheet: Datasheet, groups: ParsedLoadoutGroup[], selections: LoadoutSelection[]): string {
+  const issues = validateLoadoutSelections(datasheet, groups, selections);
+  if (issues.length === 0) {
+    return '<p class="muted loadout-validation-ok">Loadout selection is compatible.</p>';
+  }
+
+  return `<ul class="loadout-validation-list">
+    ${issues
+      .map(
+        (issue) =>
+          `<li class="loadout-validation-item ${issue.severity}">${escapeHtml(issue.message)}</li>`,
+      )
+      .join('')}
+  </ul>`;
+}
+
+function bindLoadoutValidation(datasheet: Datasheet, groups: ParsedLoadoutGroup[], defaultItems: string[]): void {
+  if (!modalHost) return;
+
+  const panel = modalHost.querySelector('#loadout-validation-panel');
+  const refresh = () => {
+    if (!panel) return;
+    const selections = collectSelectionsFromModal(groups, modalHost!);
+    panel.innerHTML = renderValidationPanel(datasheet, groups, selections);
+  };
+
+  for (const input of modalHost.querySelectorAll<HTMLInputElement>('input[name^="loadout-"], .loadout-checkbox, .wargear-select')) {
+    input.addEventListener('change', refresh);
+  }
+
+  refresh();
 }
 
 function renderWargearSection(datasheet: Datasheet, context: DatasheetModalContext): string {
@@ -154,7 +209,12 @@ function renderWargearSection(datasheet: Datasheet, context: DatasheetModalConte
       : { selections: getDefaultLoadoutSelections(groups), extraWargear: [] };
 
   const selectionMap = new Map(selections.map((entry) => [entry.groupId, entry.choiceId]));
+  const defaultItems = parseDefaultLoadoutItems(datasheet.loadout);
   const extraItems = new Set(extraWargear.map((entry) => entry.item));
+  const coverage =
+    datasheet.options?.length && groups.length
+      ? `<p class="muted modal-hint">Parsed ${groups.length} / ${datasheet.options.length} option lines.</p>`
+      : '';
 
   const loadoutBuilder =
     groups.length === 0
@@ -164,12 +224,27 @@ function renderWargearSection(datasheet: Datasheet, context: DatasheetModalConte
       <h4 class="modal-section-title">Loadout builder</h4>
       ${
         interactive
-          ? '<p class="muted modal-hint">Parsed from Wahapedia options — MFM points applied automatically where available.</p>'
+          ? '<p class="muted modal-hint">Incompatible options are disabled. MFM points apply automatically where available.</p>'
           : ''
       }
+      ${coverage}
       ${groups
-        .map((group) => renderLoadoutGroup(group, selectionMap.get(group.id) ?? null, interactive))
+        .map((group) =>
+          renderLoadoutGroup(
+            group,
+            selectionMap.get(group.id) ?? null,
+            interactive,
+            groups,
+            selections,
+            defaultItems,
+          ),
+        )
         .join('')}
+      ${
+        interactive
+          ? `<div id="loadout-validation-panel" class="loadout-validation-panel">${renderValidationPanel(datasheet, groups, selections)}</div>`
+          : ''
+      }
     </section>`;
 
   const standaloneBlock =
@@ -317,18 +392,7 @@ export function openDatasheetModal(datasheet: Datasheet, context: DatasheetModal
   const saveBtn = modalHost.querySelector<HTMLButtonElement>('#save-loadout-btn');
   saveBtn?.addEventListener('click', () => {
     const groups = parseDatasheetLoadout(datasheet);
-    const selections: LoadoutSelection[] = groups.map((group) => {
-      if (group.type === 'exclusive') {
-        const selected = modalHost!.querySelector<HTMLInputElement>(`input[name="loadout-${group.id}"]:checked`);
-        const choiceId = selected?.value ? selected.value : null;
-        return { groupId: group.id, choiceId };
-      }
-
-      const checked = modalHost!.querySelector<HTMLInputElement>(
-        `.loadout-checkbox[data-group-id="${group.id}"]:checked`,
-      );
-      return { groupId: group.id, choiceId: checked?.dataset.choiceId ?? null };
-    });
+    const selections = collectSelectionsFromModal(groups, modalHost!);
 
     const extraWargear = [...modalHost!.querySelectorAll<HTMLInputElement>('.wargear-select:checked')].map(
       (input) => ({
@@ -337,9 +401,22 @@ export function openDatasheetModal(datasheet: Datasheet, context: DatasheetModal
       }),
     );
 
+    const issues = validateLoadoutSelections(datasheet, groups, selections);
+    const errors = issues.filter((issue) => issue.severity === 'error');
+    if (errors.length > 0) {
+      showToast(`Fix ${errors.length} loadout conflict(s) before saving.`, 'error', 5000);
+      const panel = modalHost!.querySelector('#loadout-validation-panel');
+      if (panel) panel.innerHTML = renderValidationPanel(datasheet, groups, selections);
+      return;
+    }
+
     context.onSaveLoadout?.({ selections, wargear: extraWargear });
     closeModal();
   });
+
+  if (context.mode === 'roster' && context.unit) {
+    bindLoadoutValidation(datasheet, parseDatasheetLoadout(datasheet), parseDefaultLoadoutItems(datasheet.loadout));
+  }
 }
 
 export function bindDatasheetDetailButtons(

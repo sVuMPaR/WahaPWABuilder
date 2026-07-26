@@ -6,12 +6,16 @@ import { getRoster, saveRoster } from '../db/store';
 import {
   canAddEnhancement,
   createRosterEnhancement,
+  getDetachmentEnhancements,
   getEligibleEnhancementsForUnit,
   isStandardDetachment,
   MAX_ARMY_ENHANCEMENTS,
   pruneEnhancementsForDetachment,
   pruneEnhancementsForRemovedUnit,
 } from '../roster/enhancements';
+import { ARMY_ROLE_ORDER, armyRoleLabel, groupDatasheetsByRole, groupRosterUnitsByRole } from '../roster/roles';
+import { t } from '../i18n';
+import { BATTLE_SIZE_LIMITS, CUSTOM_POINT_LIMIT, type BattleSize } from '../types';
 import { copyRosterToClipboard, shareRoster } from '../roster/export';
 import {
   buildBodyguardIndex,
@@ -53,8 +57,31 @@ import { navigate } from '../router';
 import type { CostOption, Datasheet, FactionPack, Roster, RosterUnit } from '../types';
 
 function formatCostLabel(cost: CostOption): string {
-  const models = cost.models === 1 ? '1 model' : `${cost.models} models`;
+  const models = cost.models === 1 ? t('model.one') : t('model.many', { n: cost.models });
   return `${cost.points} pts · ${models}`;
+}
+
+function battleSizeLabel(size: BattleSize): string {
+  switch (size) {
+    case 'incursion':
+      return t('battle.incursion');
+    case 'strike-force':
+      return t('battle.strikeForce');
+    case 'onslaught':
+      return t('battle.onslaught');
+    default:
+      return t('roster.new.custom');
+  }
+}
+
+function pointLimitForBattleSize(battleSize: BattleSize, customPoints?: number): number {
+  if (battleSize === 'custom') {
+    const custom = customPoints ?? CUSTOM_POINT_LIMIT.default;
+    return Number.isFinite(custom) && custom >= CUSTOM_POINT_LIMIT.min && custom <= CUSTOM_POINT_LIMIT.max
+      ? custom
+      : CUSTOM_POINT_LIMIT.default;
+  }
+  return BATTLE_SIZE_LIMITS[battleSize];
 }
 
 function datasheetMap(pack: FactionPack): Map<string, Datasheet> {
@@ -72,20 +99,48 @@ function renderPointsBar(roster: Roster): string {
       <div class="points-bar-fill" style="width: ${pct}%"></div>
       <span class="points-bar-label">
         <strong>${total}</strong> / ${roster.pointLimit} pts
-        <span class="points-remaining">(${over ? `${Math.abs(remaining)} over` : `${remaining} left`})</span>
+        <span class="points-remaining">(${over ? t('editor.pointsOver', { n: Math.abs(remaining) }) : t('editor.pointsLeft', { n: remaining })})</span>
       </span>
+    </div>`;
+}
+
+function renderBattleSizeControls(roster: Roster): string {
+  return `
+    <div class="battle-size-controls">
+      <label class="field">
+        <span>${t('editor.battleSize')}</span>
+        <select id="battle-size-select">
+          <option value="incursion"${roster.battleSize === 'incursion' ? ' selected' : ''}>${battleSizeLabel('incursion')} (${BATTLE_SIZE_LIMITS.incursion})</option>
+          <option value="strike-force"${roster.battleSize === 'strike-force' ? ' selected' : ''}>${battleSizeLabel('strike-force')} (${BATTLE_SIZE_LIMITS['strike-force']})</option>
+          <option value="onslaught"${roster.battleSize === 'onslaught' ? ' selected' : ''}>${battleSizeLabel('onslaught')} (${BATTLE_SIZE_LIMITS.onslaught})</option>
+          <option value="custom"${roster.battleSize === 'custom' ? ' selected' : ''}>${t('roster.new.custom')}</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>${t('editor.pointLimit')}</span>
+        <input
+          type="number"
+          id="point-limit-input"
+          min="${CUSTOM_POINT_LIMIT.min}"
+          max="${CUSTOM_POINT_LIMIT.max}"
+          step="${CUSTOM_POINT_LIMIT.step}"
+          value="${roster.pointLimit}"
+          ${roster.battleSize === 'custom' ? '' : 'readonly'}
+          class="${roster.battleSize === 'custom' ? '' : 'point-limit-locked'}"
+        />
+      </label>
     </div>`;
 }
 
 function renderDetachmentSection(roster: Roster, pack: FactionPack): string {
   const detachments = (pack.detachments ?? []).filter(isStandardDetachment);
   if (detachments.length === 0) {
-    return '<p class="empty">No detachments in data pack for this faction.</p>';
+    return `<p class="empty">${t('editor.noDetachments')}</p>`;
   }
 
   return `
     <select id="detachment-select" class="search" ${detachments.length === 1 ? 'disabled' : ''}>
-      <option value="">Select detachment…</option>
+      <option value="">${t('editor.selectDetachment')}</option>
       ${detachments
         .map((detachment) => {
           const meta = [
@@ -107,21 +162,54 @@ function renderEnhancementsSection(
   addingEnhancement: boolean,
 ): string {
   const assigned = roster.enhancements ?? [];
-  const canAdd = canAddEnhancement(roster) && roster.detachmentId;
-
+  const underCap = canAddEnhancement(roster);
   const eligibleUnits = roster.units.filter(
     (unit) => getEligibleEnhancementsForUnit(roster, pack, unit, sheets).length > 0,
   );
+  const canAdd = underCap && Boolean(roster.detachmentId) && eligibleUnits.length > 0;
+  const detachmentEnhancements = roster.detachmentId
+    ? getDetachmentEnhancements(pack, roster.detachmentId)
+    : [];
+
+  let hint = '';
+  if (!roster.detachmentId) {
+    hint = `<p class="muted enhancement-hint">${t('editor.enhancementHintDetachment')}</p>`;
+  } else if (!underCap) {
+    hint = `<p class="muted enhancement-hint">${t('editor.enhancementHintMax', { max: MAX_ARMY_ENHANCEMENTS })}</p>`;
+  } else if (eligibleUnits.length === 0) {
+    hint = `<p class="muted enhancement-hint">${t('editor.enhancementHintCharacter')}</p>`;
+  }
+
+  const availableList =
+    roster.detachmentId && detachmentEnhancements.length > 0
+      ? `<p class="muted enhancement-available">${escapeHtml(
+          detachmentEnhancements
+            .map((enhancement) => `${enhancement.name} (${enhancement.points?.cost ?? enhancement.cost ?? 0})`)
+            .join(' · '),
+        )}</p>`
+      : '';
 
   return `
     <div class="enhancement-block">
       <div class="section-row">
-        <span class="muted">Assigned ${assigned.length} / ${MAX_ARMY_ENHANCEMENTS}</span>
-        ${canAdd && eligibleUnits.length > 0 ? '<button type="button" class="btn small" id="add-enhancement-btn">Add enhancement</button>' : ''}
+        <span class="muted">${t('editor.assigned', { n: assigned.length, max: MAX_ARMY_ENHANCEMENTS })}</span>
+        ${
+          canAdd
+            ? `<button type="button" class="btn small" id="add-enhancement-btn">${t('editor.addEnhancement')}</button>`
+            : underCap
+              ? `<button type="button" class="btn small" id="add-enhancement-btn" disabled title="${escapeHtml(
+                  !roster.detachmentId
+                    ? t('editor.enhancementHintDetachment')
+                    : t('editor.enhancementHintCharacter'),
+                )}">${t('editor.addEnhancement')}</button>`
+              : ''
+        }
       </div>
+      ${hint}
+      ${availableList}
       ${
         assigned.length === 0
-          ? '<p class="empty">No enhancements assigned.</p>'
+          ? `<p class="empty">${t('editor.noEnhancements')}</p>`
           : `<ul class="enhancement-list">
         ${assigned
           .map(
@@ -129,7 +217,7 @@ function renderEnhancementsSection(
           <li class="enhancement-row">
             <span>${escapeHtml(entry.name)} on ${escapeHtml(entry.unitName)}</span>
             <span class="army-points">${entry.points} pts</span>
-            <button type="button" class="btn icon danger enhancement-remove" data-id="${entry.id}" title="Remove">×</button>
+            <button type="button" class="btn icon danger enhancement-remove" data-id="${entry.id}" title="${t('common.delete')}">×</button>
           </li>`,
           )
           .join('')}
@@ -139,21 +227,21 @@ function renderEnhancementsSection(
         addingEnhancement && canAdd
           ? `<form id="enhancement-form" class="inline-form">
           <label class="field">
-            <span>Character</span>
+            <span>${t('editor.enhancementCharacter')}</span>
             <select name="unitId" required>
-              <option value="">Select unit…</option>
+              <option value="">${t('editor.selectUnit')}</option>
               ${eligibleUnits.map((unit) => `<option value="${unit.id}">${escapeHtml(unit.name)}</option>`).join('')}
             </select>
           </label>
           <label class="field">
-            <span>Enhancement</span>
+            <span>${t('editor.enhancementPick')}</span>
             <select name="enhancementId" required disabled>
-              <option value="">Select character first…</option>
+              <option value="">${t('editor.selectCharacterFirst')}</option>
             </select>
           </label>
           <div class="form-actions">
-            <button type="submit" class="btn primary small">Assign</button>
-            <button type="button" class="btn ghost small" id="cancel-enhancement-btn">Cancel</button>
+            <button type="submit" class="btn primary small">${t('editor.assign')}</button>
+            <button type="button" class="btn ghost small" id="cancel-enhancement-btn">${t('common.cancel')}</button>
           </div>
         </form>`
           : ''
@@ -168,18 +256,18 @@ function renderValidationSection(
 ): string {
   const issues = getRosterValidationIssues(roster, sheets);
   const keywordNote = !factionHasKeywordData(pack)
-    ? '<p class="validation-note">Keyword data missing for this faction — copy limits use default max 3.</p>'
+    ? `<p class="validation-note">${t('editor.keywordNote')}</p>`
     : '';
 
   if (issues.length === 0 && !keywordNote) {
-    return '<p class="muted validation-ok">Army list is legal.</p>';
+    return `<p class="muted validation-ok">${t('editor.legal')}</p>`;
   }
 
   const hasErrors = issues.some((issue) => issue.severity === 'error');
   const status = hasErrors
-    ? '<p class="validation-status error">List has rule errors — fix before playing.</p>'
+    ? `<p class="validation-status error">${t('editor.hasErrors')}</p>`
     : issues.length
-      ? '<p class="validation-status warning">Warnings only.</p>'
+      ? `<p class="validation-status warning">${t('editor.warningsOnly')}</p>`
       : '';
 
   return `
@@ -201,38 +289,48 @@ function renderValidationSection(
 
 function renderArmyList(roster: Roster, sheets: Map<string, Datasheet>): string {
   if (roster.units.length === 0) {
-    return '<p class="empty">No units yet. Search below to add datasheets with MFM points.</p>';
+    return `<p class="empty">${t('editor.noUnits')}</p>`;
   }
 
-  return `
-    <ul class="army-list">
-      ${roster.units
-        .map((unit) => {
-          const datasheet = sheets.get(unit.datasheetId);
-          const leaderMeta = unit.mfmRole ? formatLeaderMeta(roster, unit) : null;
-          const unattached = unit.mfmRole && !unit.attachedToUnitId;
-          const copies = countDatasheetCopies(roster, unit.datasheetId);
-          const max = datasheet ? maxUnitCopies(datasheet) : 3;
-          const copyWarning = copies > max ? ' over-limit' : '';
-          const loadoutLabel = datasheet
-            ? unitLoadoutSummary(unit, datasheet)
-            : unit.wargear?.map((entry) => entry.item).join(', ') ?? '';
-          const loadoutPart = loadoutLabel ? ` · ${escapeHtml(loadoutLabel)}` : '';
-          const statsPreview = datasheet ? renderStatsPreviewHtml(datasheet) : '';
-          return `
-        <li class="army-row${unattached ? ' army-row-error' : ''}">
-          <div class="army-row-main">
-            <button type="button" class="army-name-btn" data-datasheet-id="${unit.datasheetId}" data-roster-unit-id="${unit.id}">${escapeHtml(unit.name)}</button>
-            ${statsPreview}
-            <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} models · ${copies}/${max}${loadoutPart}${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
-          </div>
-          <span class="army-points${copyWarning}">${unitTotalPoints(unit)} pts</span>
-          ${unattached ? `<button type="button" class="btn small army-attach" data-unit-id="${unit.id}" title="Attach to bodyguard">Attach</button>` : ''}
-          <button type="button" class="btn icon danger army-remove" data-unit-id="${unit.id}" title="Remove unit">×</button>
-        </li>`;
-        })
-        .join('')}
-    </ul>`;
+  const groups = groupRosterUnitsByRole(roster.units, sheets);
+  const sections = ARMY_ROLE_ORDER.map((group) => {
+    const units = groups.get(group) ?? [];
+    if (units.length === 0) return '';
+    return `
+      <div class="army-group">
+        <h4 class="army-group-title">${armyRoleLabel(group)} <span class="muted">(${units.length})</span></h4>
+        <ul class="army-list">
+          ${units
+            .map((unit) => {
+              const datasheet = sheets.get(unit.datasheetId);
+              const leaderMeta = unit.mfmRole ? formatLeaderMeta(roster, unit) : null;
+              const unattached = unit.mfmRole && !unit.attachedToUnitId;
+              const copies = countDatasheetCopies(roster, unit.datasheetId);
+              const max = datasheet ? maxUnitCopies(datasheet) : 3;
+              const copyWarning = copies > max ? ' over-limit' : '';
+              const loadoutLabel = datasheet
+                ? unitLoadoutSummary(unit, datasheet)
+                : unit.wargear?.map((entry) => entry.item).join(', ') ?? '';
+              const loadoutPart = loadoutLabel ? ` · ${escapeHtml(loadoutLabel)}` : '';
+              const statsPreview = datasheet ? renderStatsPreviewHtml(datasheet) : '';
+              return `
+            <li class="army-row${unattached ? ' army-row-error' : ''}">
+              <div class="army-row-main">
+                <button type="button" class="army-name-btn" data-datasheet-id="${unit.datasheetId}" data-roster-unit-id="${unit.id}">${escapeHtml(unit.name)}</button>
+                ${statsPreview}
+                <span class="army-meta">${escapeHtml(unit.tierLabel)} · ${unit.models} · ${copies}/${max}${loadoutPart}${leaderMeta ? ` · ${escapeHtml(leaderMeta)}` : ''}</span>
+              </div>
+              <span class="army-points${copyWarning}">${unitTotalPoints(unit)} pts</span>
+              ${unattached ? `<button type="button" class="btn small army-attach" data-unit-id="${unit.id}" title="${t('editor.attach')}">${t('editor.attach')}</button>` : ''}
+              <button type="button" class="btn icon danger army-remove" data-unit-id="${unit.id}" title="${t('common.delete')}">×</button>
+            </li>`;
+            })
+            .join('')}
+        </ul>
+      </div>`;
+  }).join('');
+
+  return sections;
 }
 
 function renderUnitBadges(
@@ -241,11 +339,11 @@ function renderUnitBadges(
   bodyguardIndex: ReturnType<typeof buildBodyguardIndex>,
 ): string {
   const badges: string[] = [];
-  if (datasheet.points?.role === 'leader') badges.push('Leader');
-  if (datasheet.points?.role === 'support') badges.push('Support');
-  if (isBodyguardUnit(datasheet.id, bodyguardIndex)) badges.push('Bodyguard');
-  if (isEpicHero(datasheet)) badges.push('Epic Hero');
-  if (isBattleline(datasheet)) badges.push('Battleline');
+  if (datasheet.points?.role === 'leader') badges.push(t('badge.leader'));
+  if (datasheet.points?.role === 'support') badges.push(t('badge.support'));
+  if (isBodyguardUnit(datasheet.id, bodyguardIndex)) badges.push(t('badge.bodyguard'));
+  if (isEpicHero(datasheet)) badges.push(t('badge.epicHero'));
+  if (isBattleline(datasheet)) badges.push(t('badge.battleline'));
 
   const copies = countDatasheetCopies(roster, datasheet.id);
   const max = maxUnitCopies(datasheet);
@@ -262,38 +360,45 @@ function renderUnitPicker(
   sheets: Map<string, Datasheet>,
 ): string {
   const normalized = query.trim().toLowerCase();
-  const available = datasheets
+  const matched = datasheets
     .filter((sheet) => sheet.points?.pricing?.length)
-    .filter((sheet) => !normalized || sheet.name.toLowerCase().includes(normalized))
-    .slice(0, 40);
+    .filter((sheet) => !normalized || sheet.name.toLowerCase().includes(normalized));
 
-  if (available.length === 0) {
-    return '<p class="empty">No units match your search.</p>';
+  if (matched.length === 0) {
+    return `<p class="empty">${t('editor.noMatch')}</p>`;
   }
 
-  return `
-    <ul class="picker-list">
-      ${available
-        .map((sheet) => {
-          const leaders = getBodyguardLeaders(sheet.id, bodyguardIndex);
-          const leaderHint = leaders.length
-            ? `Bodyguard for: ${leaders.slice(0, 3).join(', ')}${leaders.length > 3 ? '…' : ''}`
-            : '';
-          const bodyguardHint = isLeaderOrSupport(sheet) ? getLeaderBodyguardHint(sheet, sheets) : null;
-          const atLimit = !canAddUnitCopy(roster, sheet).ok;
-          return `
-        <li class="picker-row${atLimit ? ' at-limit' : ''}">
-          <div class="picker-main">
-            <button type="button" class="picker-name-btn" data-datasheet-id="${sheet.id}">${escapeHtml(sheet.name)}</button>
-            <span class="picker-badges">${renderUnitBadges(sheet, roster, bodyguardIndex)}</span>
-            ${renderStatsPreviewHtml(sheet)}
-            <span class="picker-role">${escapeHtml(sheet.role ?? '')}${leaderHint ? ` · ${escapeHtml(leaderHint)}` : ''}${bodyguardHint ? ` · ${escapeHtml(bodyguardHint)}` : ''} · ${escapeHtml(copyLimitLabel(sheet))}</span>
-          </div>
-          <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}"${atLimit ? ' disabled title="Copy limit reached"' : ''}>Add</button>
-        </li>`;
-        })
-        .join('')}
-    </ul>`;
+  const groups = groupDatasheetsByRole(matched);
+  return ARMY_ROLE_ORDER.map((group) => {
+    const sheetsInGroup = (groups.get(group) ?? []).slice(0, normalized ? 40 : 40);
+    if (sheetsInGroup.length === 0) return '';
+    return `
+      <div class="picker-group">
+        <h4 class="army-group-title">${armyRoleLabel(group)} <span class="muted">(${sheetsInGroup.length})</span></h4>
+        <ul class="picker-list">
+          ${sheetsInGroup
+            .map((sheet) => {
+              const leaders = getBodyguardLeaders(sheet.id, bodyguardIndex);
+              const leaderHint = leaders.length
+                ? `Bodyguard for: ${leaders.slice(0, 3).join(', ')}${leaders.length > 3 ? '…' : ''}`
+                : '';
+              const bodyguardHint = isLeaderOrSupport(sheet) ? getLeaderBodyguardHint(sheet, sheets) : null;
+              const atLimit = !canAddUnitCopy(roster, sheet).ok;
+              return `
+            <li class="picker-row${atLimit ? ' at-limit' : ''}">
+              <div class="picker-main">
+                <button type="button" class="picker-name-btn" data-datasheet-id="${sheet.id}">${escapeHtml(sheet.name)}</button>
+                <span class="picker-badges">${renderUnitBadges(sheet, roster, bodyguardIndex)}</span>
+                ${renderStatsPreviewHtml(sheet)}
+                <span class="picker-role">${escapeHtml(sheet.role ?? '')}${leaderHint ? ` · ${escapeHtml(leaderHint)}` : ''}${bodyguardHint ? ` · ${escapeHtml(bodyguardHint)}` : ''} · ${escapeHtml(copyLimitLabel(sheet))}</span>
+              </div>
+              <button type="button" class="btn small picker-add" data-datasheet-id="${sheet.id}"${atLimit ? ' disabled' : ''}>${t('common.add')}</button>
+            </li>`;
+            })
+            .join('')}
+        </ul>
+      </div>`;
+  }).join('');
 }
 
 function renderCostPicker(datasheet: Datasheet, copyIndex: number): string {
@@ -316,7 +421,7 @@ function renderCostPicker(datasheet: Datasheet, copyIndex: number): string {
           </button>`,
           )
           .join('')}
-        <button type="button" class="btn ghost cost-cancel">Cancel</button>
+        <button type="button" class="btn ghost cost-cancel">${t('common.cancel')}</button>
       </div>
     </div>`;
 }
@@ -327,23 +432,23 @@ function renderAttachPicker(roster: Roster, leaderUnit: RosterUnit, datasheet: D
   return `
     <div class="cost-picker attach-picker" data-unit-id="${leaderUnit.id}">
       <p class="cost-picker-title">
-        Attach ${escapeHtml(leaderUnit.name)}
-        <span class="muted">to a unit in your list</span>
+        ${t('editor.attach')} ${escapeHtml(leaderUnit.name)}
+        <span class="muted">${t('editor.attachTo')}</span>
       </p>
       <div class="cost-picker-options">
         ${
           targets.length === 0
-            ? `<p class="empty">No compatible bodyguard in your list yet. Add one of: ${escapeHtml(getAttachTargetNames(datasheet, sheets).slice(0, 5).join(', '))}, then attach here or use the Attach button.</p>`
+            ? `<p class="empty">${t('editor.noBodyguard')} ${escapeHtml(getAttachTargetNames(datasheet, sheets).slice(0, 5).join(', '))}</p>`
             : targets
                 .map(
                   (target) => `
             <button type="button" class="btn attach-option" data-target-id="${target.id}">
-              ${escapeHtml(target.name)} <span class="badge">Bodyguard</span>
+              ${escapeHtml(target.name)} <span class="badge">${t('badge.bodyguard')}</span>
             </button>`,
                 )
                 .join('')
         }
-        <button type="button" class="btn ghost attach-cancel">Remove leader</button>
+        <button type="button" class="btn ghost attach-cancel">${t('editor.removeLeader')}</button>
       </div>
     </div>`;
 }
@@ -367,36 +472,40 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
     root.innerHTML = `
       <section class="panel roster-editor">
         <header class="panel-header">
-          <button type="button" class="back" id="back-btn">← Rosters</button>
+          <button type="button" class="back" id="back-btn">${t('editor.back')}</button>
           <div class="roster-title-block">
             <h2>${escapeHtml(current.name)}</h2>
-            <p class="muted">${escapeHtml(current.factionName)} · ${current.pointLimit} pt ${current.battleSize.replace('-', ' ')}${current.detachmentName ? ` · ${escapeHtml(current.detachmentName)}` : ''}</p>
+            <p class="muted">${escapeHtml(current.factionName)}${current.detachmentName ? ` · ${escapeHtml(current.detachmentName)}` : ''}</p>
           </div>
           <div class="header-actions">
-            <button type="button" class="btn small" id="copy-roster-btn">Copy list</button>
-            <button type="button" class="btn small" id="share-roster-btn">Share</button>
+            <button type="button" class="btn small" id="copy-roster-btn">${t('editor.copyList')}</button>
+            <button type="button" class="btn small" id="share-roster-btn">${t('editor.share')}</button>
           </div>
         </header>
         ${renderPointsBar(current)}
+        <section class="roster-section">
+          <h3 class="section-title">${t('editor.battleSize')}</h3>
+          ${renderBattleSizeControls(current)}
+        </section>
         <section class="roster-section validation-section">
-          <h3 class="section-title">Rules check</h3>
+          <h3 class="section-title">${t('editor.rulesCheck')}</h3>
           <div id="validation-panel">${renderValidationSection(current, pack, sheets)}</div>
         </section>
         <section class="roster-section">
-          <h3 class="section-title">Detachment</h3>
+          <h3 class="section-title">${t('editor.detachment')}</h3>
           ${renderDetachmentSection(current, pack)}
         </section>
         <section class="roster-section">
-          <h3 class="section-title">Enhancements</h3>
+          <h3 class="section-title">${t('editor.enhancements')}</h3>
           ${renderEnhancementsSection(current, pack, sheets, addingEnhancement)}
         </section>
         <section class="roster-section">
-          <h3 class="section-title">Army list</h3>
+          <h3 class="section-title">${t('editor.armyList')}</h3>
           <div id="army-list">${renderArmyList(current, sheets)}</div>
         </section>
         <section class="roster-section">
-          <h3 class="section-title">Add unit</h3>
-          <input type="search" id="unit-search" class="search" placeholder="Search datasheets…" value="${escapeHtml(searchQuery)}" />
+          <h3 class="section-title">${t('editor.addUnit')}</h3>
+          <input type="search" id="unit-search" class="search" placeholder="${t('editor.searchUnits')}" value="${escapeHtml(searchQuery)}" />
           <div id="cost-picker-slot">${
             pendingDatasheetId
               ? renderCostPicker(sheets.get(pendingDatasheetId)!, nextCopyIndex(current, pendingDatasheetId))
@@ -418,14 +527,32 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
 
     root.querySelector('#back-btn')?.addEventListener('click', () => navigate('/rosters'));
 
+    const battleSizeSelect = root.querySelector<HTMLSelectElement>('#battle-size-select');
+    const pointLimitInput = root.querySelector<HTMLInputElement>('#point-limit-input');
+
+    battleSizeSelect?.addEventListener('change', async () => {
+      const battleSize = battleSizeSelect.value as BattleSize;
+      const pointLimit =
+        battleSize === 'custom'
+          ? pointLimitForBattleSize('custom', Number(pointLimitInput?.value))
+          : pointLimitForBattleSize(battleSize);
+      current = { ...current, battleSize, pointLimit };
+      current = await persistRoster(current, sheets);
+      rerender();
+    });
+
+    pointLimitInput?.addEventListener('change', async () => {
+      if (current.battleSize !== 'custom') return;
+      const pointLimit = pointLimitForBattleSize('custom', Number(pointLimitInput.value));
+      current = { ...current, pointLimit };
+      current = await persistRoster(current, sheets);
+      rerender();
+    });
+
     const ensureLegalForExport = (): boolean => {
       if (isRosterLegal(current, sheets)) return true;
       const errors = getRosterErrors(current, sheets);
-      showToast(
-        `Fix ${errors.length} rule error${errors.length === 1 ? '' : 's'} before exporting — see Rules check.`,
-        'error',
-        5000,
-      );
+      showToast(t('editor.fixErrors', { n: errors.length }), 'error', 5000);
       const section = root.querySelector('.validation-section');
       section?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       section?.classList.add('flash-highlight');
@@ -440,7 +567,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
       const btn = root.querySelector<HTMLButtonElement>('#copy-roster-btn');
       if (btn) {
         const original = btn.textContent;
-        btn.textContent = 'Copied!';
+        btn.textContent = t('editor.copied');
         setTimeout(() => {
           btn.textContent = original;
         }, 1500);
@@ -455,7 +582,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
         const btn = root.querySelector<HTMLButtonElement>('#share-roster-btn');
         if (btn) {
           const original = btn.textContent;
-          btn.textContent = 'Copied!';
+          btn.textContent = t('editor.copied');
           setTimeout(() => {
             btn.textContent = original;
           }, 1500);
@@ -572,7 +699,7 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
               ),
             };
             current = await persistRoster(current, sheets);
-            showToast('Loadout saved.', 'success', 2500);
+            showToast(t('editor.loadoutSaved'), 'success', 2500);
             rerender();
           },
         });
@@ -596,8 +723,8 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
       enhancementSelect.disabled = eligible.length === 0;
       enhancementSelect.innerHTML =
         eligible.length === 0
-          ? '<option value="">No eligible enhancements</option>'
-          : `<option value="">Select enhancement…</option>${eligible.map((enhancement) => `<option value="${enhancement.id}">${escapeHtml(enhancement.name)} (${enhancement.points?.cost ?? enhancement.cost} pts)</option>`).join('')}`;
+          ? `<option value="">${t('editor.noEligibleEnhancements')}</option>`
+          : `<option value="">${t('editor.selectEnhancement')}</option>${eligible.map((enhancement) => `<option value="${enhancement.id}">${escapeHtml(enhancement.name)} (${enhancement.points?.cost ?? enhancement.cost} pts)</option>`).join('')}`;
     });
 
     form.addEventListener('submit', async (event) => {
@@ -745,11 +872,11 @@ function bindEditor(root: HTMLElement, roster: Roster, pack: FactionPack) {
 }
 
 export async function renderRosterEditor(root: HTMLElement, rosterId: string) {
-  root.innerHTML = '<p class="loading">Loading roster…</p>';
+  root.innerHTML = `<p class="loading">${t('common.loading')}</p>`;
 
   const roster = await getRoster(rosterId);
   if (!roster) {
-    root.innerHTML = `<p class="error">Roster not found. <a href="#/rosters">Back to rosters</a></p>`;
+    root.innerHTML = `<p class="error">${t('common.error')}. <a href="#/rosters">${t('editor.back')}</a></p>`;
     return;
   }
 
@@ -757,7 +884,7 @@ export async function renderRosterEditor(root: HTMLElement, rosterId: string) {
     const index = await loadFactionIndex();
     const entry = index.find((faction) => faction.id === roster.factionId);
     if (!entry) {
-      root.innerHTML = `<p class="error">Faction data missing for this roster.</p>`;
+      root.innerHTML = `<p class="error">${t('factions.notFound')}</p>`;
       return;
     }
 
@@ -766,12 +893,11 @@ export async function renderRosterEditor(root: HTMLElement, rosterId: string) {
   } catch (error) {
     const message = isOfflineDataError(error)
       ? error.message
-      : 'Could not load faction data for this roster.';
+      : t('factions.loadError');
     root.innerHTML = `
       <section class="panel">
         <p class="error">${message}</p>
-        <p class="muted offline-tip">Open this faction while online to edit the roster offline later.</p>
-        <p><a href="#/rosters">← Back to rosters</a></p>
+        <p><a href="#/rosters">${t('editor.back')}</a></p>
       </section>
     `;
   }

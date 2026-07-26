@@ -1,6 +1,19 @@
 import type { Datasheet, LoadoutSelection, MfmWargearOption, ParsedLoadoutChoice, ParsedLoadoutGroup } from '../types';
 
-function normalizeName(value: string): string {
+const WORD_NUMBERS: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+};
+
+export function normalizeItemName(value: string): string {
   return value
     .toLowerCase()
     .replace(/^this model'?s?\s+/i, '')
@@ -9,7 +22,19 @@ function normalizeName(value: string): string {
 }
 
 function slugify(value: string): string {
-  return normalizeName(value).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return normalizeItemName(value).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function parseCount(raw: string): number {
+  const lower = raw.toLowerCase();
+  return WORD_NUMBERS[lower] ?? Number.parseInt(raw, 10);
+}
+
+export function splitReplaceSubject(subject: string): string[] {
+  return subject
+    .split(/\s+and\s+(?:1\s+)?/i)
+    .map((part) => part.trim().replace(/^1\s+/, '').replace(/\.$/, ''))
+    .filter(Boolean);
 }
 
 export function parseDefaultLoadoutItems(loadout?: string): string[] {
@@ -46,9 +71,9 @@ function matchMfmForItems(items: string[], mfmOptions: MfmWargearOption[]): MfmW
   const matched: MfmWargearOption[] = [];
 
   for (const item of items) {
-    const norm = normalizeName(item);
+    const norm = normalizeItemName(item);
     const found = mfmOptions.find((option) => {
-      const optionNorm = normalizeName(option.item);
+      const optionNorm = normalizeItemName(option.item);
       return optionNorm === norm || optionNorm.includes(norm) || norm.includes(optionNorm);
     });
     if (found && !matched.some((entry) => entry.item === found.item)) {
@@ -85,27 +110,218 @@ function cleanSubject(subject: string): string {
     .trim();
 }
 
+function isRulesNote(text: string): boolean {
+  if (text === 'None' || text === 'None.') return true;
+  if (/^\*+/.test(text)) return true;
+  if (/^This weapon cannot be replaced/i.test(text)) return true;
+  if (/^You cannot select the same/i.test(text)) return true;
+  if (/^If this unit contains/i.test(text)) {
+    if (/\bcannot\b/i.test(text)) return true;
+    return !/\bcan (?:be equipped|be replaced|have|each)\b/i.test(text);
+  }
+  return false;
+}
+
+function buildPerModelGroup(
+  groupId: string,
+  subject: string,
+  replaces: string,
+  replacement: string,
+  mfmOptions: MfmWargearOption[],
+  maxModels?: number,
+): ParsedLoadoutGroup {
+  const { label, items } = parseChoiceItems(replacement);
+  const replaceLabel = cleanSubject(replaces);
+
+  return {
+    id: groupId,
+    type: 'per-model',
+    label: maxModels
+      ? `Up to ${maxModels} ${subject}: replace ${replaceLabel} → ${label}`
+      : `${subject}: replace ${replaceLabel} → ${label}`,
+    rawText: `${subject} replace ${replaces} → ${replacement}`,
+    replaces: replaceLabel,
+    ...(maxModels ? { maxModels } : {}),
+    choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+  };
+}
+
+const COUNT_TOKEN = '(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)';
+
+function parseEquippedCount(raw: string): number {
+  return parseCount(raw.replace(/^up to\s+/i, ''));
+}
+
 export function parseOptionDescription(
   description: string,
   index: number,
   mfmOptions: MfmWargearOption[] = [],
 ): ParsedLoadoutGroup | null {
-  const text = description.trim();
+  const text = description.trim().replace(/\u2019/g, "'");
   const groupId = `opt-${index}`;
+
+  if (isRulesNote(text)) return null;
 
   let match: RegExpMatchArray | null;
 
-  match = text.match(/^Any number of models can each have their (.+?) replaced with (?:1 |one )(.+?)\.?$/i);
+  match = text.match(
+    new RegExp(
+      `^For every (\\d+) models(?: in this unit)?, up to (\\d+|two|three|four|five|six|seven|eight|nine|ten) (.+?) can each have their (.+?) replaced with (?:1 |one )(.+?)\\.?$`,
+      'i',
+    ),
+  );
+  if (match) {
+    return buildPerModelGroup(
+      groupId,
+      match[3],
+      match[4],
+      match[5],
+      mfmOptions,
+      parseCount(match[2]),
+    );
+  }
+
+  match = text.match(
+    new RegExp(
+      `^For every (\\d+) models(?: in this unit)?, (?:it|this unit|1 model) can (?:be equipped with|have) (?:1 |one )(.+?)\\.?$`,
+      'i',
+    ),
+  );
   if (match) {
     const { label, items } = parseChoiceItems(match[2]);
     return {
       id: groupId,
-      type: 'per-model',
-      label: `Any model: replace ${cleanSubject(match[1])} → ${label}`,
+      type: 'ratio-optional',
+      label: `Every ${match[1]} models: add ${label}`,
       rawText: text,
-      replaces: cleanSubject(match[1]),
+      ratioPerModels: Number(match[1]),
       choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
     };
+  }
+
+  match = text.match(
+    /^For every (\d+) models(?: in this unit)?, (?:it|this unit) can have (?:1 |one )(.+?)\.?$/i,
+  );
+  if (match) {
+    const { label, items } = parseChoiceItems(match[2]);
+    return {
+      id: groupId,
+      type: 'ratio-optional',
+      label: `Every ${match[1]} models: add ${label}`,
+      rawText: text,
+      ratioPerModels: Number(match[1]),
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(/^Any number of models can each be equipped with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    const { label, items } = parseChoiceItems(match[1]);
+    return {
+      id: groupId,
+      type: 'per-model',
+      label: `Any model: add ${label}`,
+      rawText: text,
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(/^Up to (\d+|two|three|four|five|six|seven|eight|nine|ten) models can each be equipped with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    const { label, items } = parseChoiceItems(match[2]);
+    return {
+      id: groupId,
+      type: 'optional',
+      label: `Up to ${match[1]} models: add ${label}`,
+      rawText: text,
+      maxModels: parseCount(match[1]),
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(
+    new RegExp(`^This model'?s? ${COUNT_TOKEN} (.+?) can be replaced with ${COUNT_TOKEN} (.+?)\\.?$`, 'i'),
+  );
+  if (match) {
+    const { label, items } = parseChoiceItems(match[4]);
+    return {
+      id: groupId,
+      type: 'exclusive',
+      label: `Replace ${parseCount(match[1])}× ${cleanSubject(match[2])} → ${label}`,
+      rawText: text,
+      replaces: cleanSubject(match[2]),
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(
+    /^If this unit contains (\d+|two|three|four|five|six|seven|eight|nine|ten) models, 1 (.+?) can be replaced with (?:1 |one )(.+?)\.?$/i,
+  );
+  if (match) {
+    const subject = cleanSubject(match[2]);
+    const { label, items } = parseChoiceItems(match[3]);
+    return {
+      id: groupId,
+      type: 'per-model',
+      label: `At ${match[1]} models — ${subject}: replace → ${label}`,
+      rawText: text,
+      replaces: subject,
+      maxModels: 1,
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(
+    /^This model can be equipped with up to (two|three|four|five|\d+) of the following(?:, and can take duplicates)?:\s*(.+)$/is,
+  );
+  if (match) {
+    const maxPick = parseEquippedCount(match[1]);
+    const choices = splitNumberedChoices(match[2]).map((part, choiceIndex) => {
+      const { label, items } = parseChoiceItems(part);
+      return buildChoice(groupId, label, items, mfmOptions, choiceIndex);
+    });
+    return {
+      id: groupId,
+      type: 'optional',
+      label: `Pick up to ${maxPick} (duplicates allowed)`,
+      rawText: text,
+      maxModels: maxPick,
+      choices,
+    };
+  }
+
+  match = text.match(
+    /^Up to (\d+|two|three|four|five|six|seven|eight|nine|ten) (.+?) can each (?:have their|replace their) (.+?) replaced with (?:1 |one )(.+?)\.?$/i,
+  );
+  if (match) {
+    return buildPerModelGroup(
+      groupId,
+      match[2],
+      match[3],
+      match[4],
+      mfmOptions,
+      parseCount(match[1]),
+    );
+  }
+
+  match = text.match(/^All of the models in this unit can each have their (.+?) replaced with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    return buildPerModelGroup(groupId, 'All models', match[1], match[2], mfmOptions);
+  }
+
+  match = text.match(/^Any number of models can each have their (.+?) replaced with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    return buildPerModelGroup(groupId, 'Any model', match[1], match[2], mfmOptions);
+  }
+
+  match = text.match(/^Any number of (.+?) can each replace their (.+?) with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    return buildPerModelGroup(groupId, match[1], match[2], match[3], mfmOptions);
+  }
+
+  match = text.match(/^Any number of (.+?) can each have their (.+?) replaced with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    return buildPerModelGroup(groupId, match[1], match[2], match[3], mfmOptions);
   }
 
   match = text.match(/^(.+?) can be replaced with one of the following:\s*(.+)$/is);
@@ -132,6 +348,22 @@ export function parseOptionDescription(
       id: groupId,
       type: 'optional',
       label: `If no ${cleanSubject(match[1])}: add ${label}`,
+      rawText: text,
+      requiresAbsent: splitReplaceSubject(match[1]),
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(
+    new RegExp(`^This model can be equipped with ${COUNT_TOKEN} (.+?)\\.?$`, 'i'),
+  );
+  if (match) {
+    const count = parseCount(match[1]);
+    const { label, items } = parseChoiceItems(match[2]);
+    return {
+      id: groupId,
+      type: 'optional',
+      label: count > 1 ? `Optional: ${count}× ${label}` : `Optional: ${label}`,
       rawText: text,
       choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
     };
@@ -175,6 +407,51 @@ export function parseOptionDescription(
     };
   }
 
+  match = text.match(
+    new RegExp(`^(.+?) can be equipped with ${COUNT_TOKEN} (.+?)\\.?$`, 'i'),
+  );
+  if (match && !/^this model$/i.test(cleanSubject(match[1]))) {
+    const count = parseCount(match[2]);
+    const { label, items } = parseChoiceItems(match[3]);
+    return {
+      id: groupId,
+      type: 'optional',
+      label: count > 1 ? `${cleanSubject(match[1])}: add ${count}× ${label}` : `${cleanSubject(match[1])}: add ${label}`,
+      rawText: text,
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(/^(.+?) can be equipped with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    const { label, items } = parseChoiceItems(match[2]);
+    return {
+      id: groupId,
+      type: 'optional',
+      label: `${cleanSubject(match[1])}: add ${label}`,
+      rawText: text,
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(/^One model in this unit can be equipped with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    const { label, items } = parseChoiceItems(match[1]);
+    return {
+      id: groupId,
+      type: 'optional',
+      label: `One model: add ${label}`,
+      rawText: text,
+      maxModels: 1,
+      choices: [buildChoice(groupId, label, items, mfmOptions, 0)],
+    };
+  }
+
+  match = text.match(/^One model in this unit can (?:have|replace) (?:their )?(.+?) (?:replaced )?with (?:1 |one )(.+?)\.?$/i);
+  if (match) {
+    return buildPerModelGroup(groupId, 'One model', match[1], match[2], mfmOptions, 1);
+  }
+
   return null;
 }
 
@@ -206,15 +483,15 @@ export function getStandaloneMfmOptions(
 
   for (const group of groups) {
     for (const choice of group.choices) {
-      if (choice.mfmItem) referenced.add(normalizeName(choice.mfmItem));
+      if (choice.mfmItem) referenced.add(normalizeItemName(choice.mfmItem));
       for (const item of choice.items) {
         const matched = matchMfmForItems([item], mfmOptions);
-        for (const entry of matched) referenced.add(normalizeName(entry.item));
+        for (const entry of matched) referenced.add(normalizeItemName(entry.item));
       }
     }
   }
 
-  return mfmOptions.filter((option) => !referenced.has(normalizeName(option.item)));
+  return mfmOptions.filter((option) => !referenced.has(normalizeItemName(option.item)));
 }
 
 export function getDefaultLoadoutSelections(groups: ParsedLoadoutGroup[]): LoadoutSelection[] {
@@ -282,4 +559,10 @@ export function formatSelectionSummary(
 
 export function choiceLabelId(label: string): string {
   return slugify(label);
+}
+
+export function getParseCoverageStats(datasheet: Datasheet): { parsed: number; total: number } {
+  const total = datasheet.options?.length ?? 0;
+  const parsed = parseDatasheetLoadout(datasheet).length;
+  return { parsed, total };
 }
