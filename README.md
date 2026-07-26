@@ -71,9 +71,11 @@
 
 | Ветка | CI (build + test) | GitHub Pages |
 |-------|-------------------|--------------|
-| `feature` | ✅ при push | ✅ автодеплой при push |
-| `main` | ✅ при push | ❌ только вручную (Actions → Deploy PWA → Run workflow → `main`) |
+| `main` | ✅ при push | ✅ автодеплой при push (environment `github-pages` разрешает только `main`) |
+| feature / PR-ветки | ✅ при push / PR | ❌ не деплоятся (protection rules) |
 
-**Workflow:** разработка и тесты на `feature` → когда всё ок, merge в `main` → при необходимости ручной деплой production с `main`.
+**Workflow:** разработка в feature/PR → merge в `main` → автодеплой Pages. Ручной деплой: Actions → Deploy PWA → Run workflow.
 
-Live URL один: [https://svumpar.github.io/WahaPWABuilder/](https://svumpar.github.io/WahaPWABuilder/) — показывает последний успешный деплoy (обычно с `feature`).
+Коммит с `[no deploy]` в сообщении пропускает автодеплой на `main`.
+
+Live URL: [https://svumpar.github.io/WahaPWABuilder/](https://svumpar.github.io/WahaPWABuilder/)

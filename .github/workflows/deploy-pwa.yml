@@ -2,16 +2,15 @@ name: Deploy PWA
 
 on:
   push:
-    branches: [feature]
+    branches: [main]
   workflow_dispatch:
     inputs:
       target_branch:
         description: Branch to build and deploy
         required: true
-        default: feature
+        default: main
         type: choice
         options:
-          - feature
           - main
 
 permissions:
